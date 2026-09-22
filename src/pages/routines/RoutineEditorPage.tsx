@@ -20,6 +20,9 @@ import {
   Layers,
   Clock,
   Dumbbell,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 type MuscleFilterCategory =
@@ -85,6 +88,15 @@ const ensureSetsConfig = (dayEx: WorkoutDayExercise): RoutineSetDetail[] => {
   }));
 };
 
+const hasVariedSets = (ex: WorkoutDayExercise): boolean => {
+  if (!ex.setsConfig || ex.setsConfig.length <= 1) return false;
+  const firstWeight = ex.setsConfig[0].targetWeight;
+  const firstReps = ex.setsConfig[0].targetReps;
+  return ex.setsConfig.some(
+    (s) => s.targetWeight !== firstWeight || s.targetReps !== firstReps
+  );
+};
+
 export const RoutineEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -97,6 +109,9 @@ export const RoutineEditorPage: React.FC = () => {
   const [days, setDays] = useState<WorkoutDay[]>([]);
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
+
+  // Registro de qué ejercicios tienen activado el desglose individual por serie
+  const [customizedExercises, setCustomizedExercises] = useState<Record<string, boolean>>({});
 
   // Modal para seleccionar ejercicio
   const [isSelectExerciseModalOpen, setIsSelectExerciseModalOpen] = useState(false);
@@ -116,10 +131,15 @@ export const RoutineEditorPage: React.FC = () => {
         if (found) {
           setRoutineName(found.name);
           setDescription(found.description || '');
+
+          const customMap: Record<string, boolean> = {};
           const normalizedDays = found.days.map((d) => ({
             ...d,
             exercises: d.exercises.map((ex) => {
               const config = ensureSetsConfig(ex);
+              if (hasVariedSets(ex)) {
+                customMap[ex.id] = true;
+              }
               return {
                 ...ex,
                 targetSets: config.length,
@@ -127,6 +147,8 @@ export const RoutineEditorPage: React.FC = () => {
               };
             }),
           }));
+
+          setCustomizedExercises(customMap);
           setDays(normalizedDays);
           return;
         }
@@ -199,7 +221,7 @@ export const RoutineEditorPage: React.FC = () => {
       exercise,
       exerciseOrder: currentDay.exercises.length + 1,
       targetSets: defaultSets,
-      targetRepsMin: defaultReps,
+      targetRepsMin: 8,
       targetRepsMax: defaultReps,
       targetWeight: defaultWeight,
       restSeconds: 90,
@@ -236,7 +258,111 @@ export const RoutineEditorPage: React.FC = () => {
     }
   };
 
-  // --- Handlers para configuración individual de series ---
+  // --- Alternar modo simple vs. modo desglosado por serie ---
+  const toggleCustomSets = (exerciseId: string, exIndex: number) => {
+    const willBeCustom = !customizedExercises[exerciseId];
+    setCustomizedExercises((prev) => ({
+      ...prev,
+      [exerciseId]: willBeCustom,
+    }));
+
+    // Si vuelve a modo simple, sincronizar el peso general con el de la serie 1
+    if (!willBeCustom) {
+      const updated = [...days];
+      const currentDay = updated[activeDayIndex];
+      if (currentDay && currentDay.exercises[exIndex]) {
+        const ex = currentDay.exercises[exIndex];
+        const sets = ensureSetsConfig(ex);
+        const uniformWeight = sets[0]?.targetWeight ?? ex.targetWeight ?? 0;
+        ex.targetWeight = uniformWeight;
+        ex.setsConfig = sets.map((s) => ({ ...s, targetWeight: uniformWeight }));
+        setDays(updated);
+      }
+    }
+  };
+
+  // --- Handlers para MODO SIMPLE (peso y repeticiones uniformes) ---
+  const handleSimpleSetsChange = (exIndex: number, newCount: number) => {
+    const updated = [...days];
+    const currentDay = updated[activeDayIndex];
+    if (!currentDay || !currentDay.exercises[exIndex]) return;
+
+    const ex = currentDay.exercises[exIndex];
+    const safeCount = Math.max(1, newCount);
+    ex.targetSets = safeCount;
+
+    const currentSets = ensureSetsConfig(ex);
+    const baseWeight = ex.targetWeight || (currentSets[0]?.targetWeight ?? 0);
+    const baseReps = ex.targetRepsMax || ex.targetRepsMin || (currentSets[0]?.targetReps ?? 10);
+
+    const nextSets: RoutineSetDetail[] = Array.from({ length: safeCount }, (_, idx) => ({
+      setNumber: idx + 1,
+      targetReps: currentSets[idx]?.targetReps ?? baseReps,
+      targetWeight: currentSets[idx]?.targetWeight ?? baseWeight,
+    }));
+
+    ex.setsConfig = nextSets;
+    setDays(updated);
+  };
+
+  const handleSimpleWeightChange = (exIndex: number, newWeight: number) => {
+    const updated = [...days];
+    const currentDay = updated[activeDayIndex];
+    if (!currentDay || !currentDay.exercises[exIndex]) return;
+
+    const ex = currentDay.exercises[exIndex];
+    ex.targetWeight = newWeight;
+
+    const currentSets = ensureSetsConfig(ex);
+    ex.setsConfig = currentSets.map((s) => ({
+      ...s,
+      targetWeight: newWeight,
+    }));
+
+    setDays(updated);
+  };
+
+  const handleSimpleRepsMinChange = (exIndex: number, newReps: number) => {
+    const updated = [...days];
+    const currentDay = updated[activeDayIndex];
+    if (!currentDay || !currentDay.exercises[exIndex]) return;
+
+    const ex = currentDay.exercises[exIndex];
+    ex.targetRepsMin = newReps;
+    if (ex.targetRepsMax < newReps) {
+      ex.targetRepsMax = newReps;
+    }
+
+    const currentSets = ensureSetsConfig(ex);
+    ex.setsConfig = currentSets.map((s) => ({
+      ...s,
+      targetReps: newReps,
+    }));
+
+    setDays(updated);
+  };
+
+  const handleSimpleRepsMaxChange = (exIndex: number, newReps: number) => {
+    const updated = [...days];
+    const currentDay = updated[activeDayIndex];
+    if (!currentDay || !currentDay.exercises[exIndex]) return;
+
+    const ex = currentDay.exercises[exIndex];
+    ex.targetRepsMax = newReps;
+    if (ex.targetRepsMin > newReps) {
+      ex.targetRepsMin = newReps;
+    }
+
+    const currentSets = ensureSetsConfig(ex);
+    ex.setsConfig = currentSets.map((s) => ({
+      ...s,
+      targetReps: newReps,
+    }));
+
+    setDays(updated);
+  };
+
+  // --- Handlers para MODO AVANZADO (desglose por serie) ---
   const handleAddSet = (exIndex: number) => {
     const updated = [...days];
     const currentDay = updated[activeDayIndex];
@@ -405,7 +531,6 @@ export const RoutineEditorPage: React.FC = () => {
     });
   }, [allExercises, exerciseSearch, activeFilterConfig]);
 
-  // Agrupación por grupo muscular para visualización organizada
   const groupedExercisesForModal = useMemo(() => {
     const groups: { muscle: MuscleGroup; title: string; exercises: Exercise[] }[] = [];
 
@@ -547,6 +672,7 @@ export const RoutineEditorPage: React.FC = () => {
                   const ex =
                     dayEx.exercise || allExercises.find((e) => e.id === dayEx.exerciseId);
                   const sets = ensureSetsConfig(dayEx);
+                  const isCustom = Boolean(customizedExercises[dayEx.id]);
 
                   return (
                     <div
@@ -585,15 +711,268 @@ export const RoutineEditorPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveExercise(exIdx)}
-                          className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors flex-shrink-0"
-                          title="Eliminar ejercicio de la rutina"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          {/* Botón Toggle: Modo Simple vs Modo Avanzado Desglosado */}
+                          <button
+                            type="button"
+                            onClick={() => toggleCustomSets(dayEx.id, exIdx)}
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all select-none ${
+                              isCustom
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                                : 'bg-slate-900 text-gray-400 border border-gym-border hover:text-white hover:border-gray-500'
+                            }`}
+                            title={
+                              isCustom
+                                ? 'Cambiar a peso uniforme (Modo Simple)'
+                                : 'Personalizar peso y repeticiones por cada serie'
+                            }
+                          >
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">
+                              {isCustom ? 'Series Desglosadas' : 'Desglosar Series'}
+                            </span>
+                            {isCustom ? (
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveExercise(exIdx)}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors flex-shrink-0"
+                            title="Eliminar ejercicio de la rutina"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
+
+                      {/* VISTA 1: MODO SIMPLE POR DEFECTO (Configuración rápida con peso y reps globales) */}
+                      {!isCustom && (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-4 gap-2 text-center text-xs">
+                            <div className="bg-gym-card p-2 rounded-xl border border-gym-border/60">
+                              <span className="text-[10px] text-gray-400 font-bold block mb-1">
+                                Series
+                              </span>
+                              <FlexibleNumericInput
+                                value={dayEx.targetSets || 4}
+                                onChange={(val) => handleSimpleSetsChange(exIdx, val)}
+                                min={1}
+                                max={20}
+                                step={1}
+                                fallbackValue={4}
+                                autoSelectOnFocus
+                                className="w-full text-center font-black text-white bg-slate-900 border border-gym-border/80 rounded-lg py-1 text-sm focus:border-emerald-500 focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="bg-gym-card p-2 rounded-xl border border-gym-border/60">
+                              <span className="text-[10px] text-gray-400 font-bold block mb-1">
+                                Reps Mín
+                              </span>
+                              <FlexibleNumericInput
+                                value={dayEx.targetRepsMin || 8}
+                                onChange={(val) => handleSimpleRepsMinChange(exIdx, val)}
+                                min={1}
+                                max={50}
+                                step={1}
+                                fallbackValue={8}
+                                autoSelectOnFocus
+                                className="w-full text-center font-black text-white bg-slate-900 border border-gym-border/80 rounded-lg py-1 text-sm focus:border-emerald-500 focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="bg-gym-card p-2 rounded-xl border border-gym-border/60">
+                              <span className="text-[10px] text-gray-400 font-bold block mb-1">
+                                Reps Máx
+                              </span>
+                              <FlexibleNumericInput
+                                value={dayEx.targetRepsMax || 10}
+                                onChange={(val) => handleSimpleRepsMaxChange(exIdx, val)}
+                                min={1}
+                                max={50}
+                                step={1}
+                                fallbackValue={10}
+                                autoSelectOnFocus
+                                className="w-full text-center font-black text-white bg-slate-900 border border-gym-border/80 rounded-lg py-1 text-sm focus:border-emerald-500 focus:outline-none"
+                              />
+                            </div>
+
+                            <div className="bg-gym-card p-2 rounded-xl border border-gym-border/60">
+                              <span className="text-[10px] text-gray-400 font-bold block mb-1">
+                                Peso (kg)
+                              </span>
+                              <FlexibleNumericInput
+                                value={dayEx.targetWeight || 0}
+                                onChange={(val) => handleSimpleWeightChange(exIdx, val)}
+                                min={0}
+                                max={999}
+                                step={0.5}
+                                fallbackValue={0}
+                                autoSelectOnFocus
+                                className="w-full text-center font-black text-emerald-400 bg-slate-900 border border-gym-border/80 rounded-lg py-1 text-sm focus:border-emerald-500 focus:outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[11px] text-gray-400 px-1">
+                            <span className="truncate">
+                              💡 Peso uniforme de{' '}
+                              <strong className="text-emerald-400 font-bold">
+                                {dayEx.targetWeight || 0} kg
+                              </strong>{' '}
+                              para las {dayEx.targetSets || 4} series.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => toggleCustomSets(dayEx.id, exIdx)}
+                              className="text-emerald-400 hover:text-emerald-300 font-bold hover:underline flex-shrink-0 ml-2"
+                            >
+                              Personalizar por serie →
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* VISTA 2: MODO AVANZADO DESGLOSADO (Configuración individual de peso y repeticiones por cada serie) */}
+                      {isCustom && (
+                        <div className="bg-slate-950/60 rounded-xl border border-gym-border/60 p-3 space-y-2.5">
+                          <div className="flex items-center justify-between text-xs pb-1.5 border-b border-gym-border/40 flex-wrap gap-2">
+                            <div className="flex items-center gap-2">
+                              <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                              <span className="font-bold text-white tracking-wide text-xs">
+                                DESGLOSE INDIVIDUAL ({sets.length} SERIES)
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px]">
+                              {sets.length > 1 && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleCopyWeightToAll(exIdx, sets[0]?.targetWeight ?? 0)
+                                    }
+                                    className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 hover:underline transition-colors"
+                                    title="Copiar el peso de la Serie 1 a todas las demás"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                    Mismo peso
+                                  </button>
+                                  <span className="text-gray-600">|</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleCopyRepsToAll(exIdx, sets[0]?.targetReps ?? 10)
+                                    }
+                                    className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 hover:underline transition-colors"
+                                    title="Copiar las repeticiones de la Serie 1 a todas las demás"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                    Mismas reps
+                                  </button>
+                                  <span className="text-gray-600">|</span>
+                                </>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => toggleCustomSets(dayEx.id, exIdx)}
+                                className="text-gray-400 hover:text-white font-bold hover:underline"
+                              >
+                                Volver a modo simple
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Encabezado de columnas del desglose */}
+                          <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-400 px-1 uppercase tracking-wider">
+                            <div className="col-span-2 text-center">Serie</div>
+                            <div className="col-span-4 text-center">Reps</div>
+                            <div className="col-span-4 text-center">Peso (kg)</div>
+                            <div className="col-span-2 text-center">Borrar</div>
+                          </div>
+
+                          {/* Filas de Series con inputs fluidos */}
+                          <div className="space-y-1.5">
+                            {sets.map((set, setIdx) => (
+                              <div
+                                key={set.setNumber}
+                                className="grid grid-cols-12 gap-2 items-center bg-gym-card/80 hover:bg-gym-card p-1.5 rounded-xl border border-gym-border/50 transition-colors"
+                              >
+                                <div className="col-span-2 text-center">
+                                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-900 border border-gym-border text-xs font-black text-emerald-400">
+                                    S{set.setNumber}
+                                  </span>
+                                </div>
+
+                                <div className="col-span-4">
+                                  <FlexibleNumericInput
+                                    value={set.targetReps}
+                                    onChange={(val) =>
+                                      handleUpdateSetField(exIdx, setIdx, 'targetReps', val)
+                                    }
+                                    min={1}
+                                    max={100}
+                                    step={1}
+                                    fallbackValue={10}
+                                    placeholder="10"
+                                    autoSelectOnFocus
+                                    className="w-full text-center font-black text-white bg-slate-900 border border-gym-border rounded-lg py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+
+                                <div className="col-span-4">
+                                  <FlexibleNumericInput
+                                    value={set.targetWeight}
+                                    onChange={(val) =>
+                                      handleUpdateSetField(exIdx, setIdx, 'targetWeight', val)
+                                    }
+                                    min={0}
+                                    max={999}
+                                    step={0.5}
+                                    fallbackValue={0}
+                                    placeholder="0"
+                                    autoSelectOnFocus
+                                    className="w-full text-center font-black text-emerald-400 bg-slate-900 border border-gym-border rounded-lg py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
+                                  />
+                                </div>
+
+                                <div className="col-span-2 flex justify-center">
+                                  <button
+                                    type="button"
+                                    disabled={sets.length <= 1}
+                                    onClick={() => handleRemoveSet(exIdx, setIdx)}
+                                    className={`p-1.5 rounded-lg transition-colors ${
+                                      sets.length <= 1
+                                        ? 'text-gray-600 cursor-not-allowed'
+                                        : 'text-gray-400 hover:text-red-400 hover:bg-red-500/10'
+                                    }`}
+                                    title={
+                                      sets.length <= 1
+                                        ? 'Debe haber al menos 1 serie'
+                                        : 'Eliminar esta serie'
+                                    }
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Botón "+ Agregar Serie" */}
+                          <button
+                            type="button"
+                            onClick={() => handleAddSet(exIdx)}
+                            className="w-full py-2 border border-dashed border-gym-border hover:border-emerald-500/80 rounded-xl text-xs font-bold text-gray-300 hover:text-emerald-400 bg-slate-900/40 hover:bg-emerald-500/5 transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <Plus className="w-3.5 h-3.5 stroke-[3] text-emerald-400" />
+                            Agregar Serie ({sets.length + 1})
+                          </button>
+                        </div>
+                      )}
 
                       {/* Parámetros Generales: Descanso y Notas */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -612,6 +991,7 @@ export const RoutineEditorPage: React.FC = () => {
                               max={600}
                               step={15}
                               fallbackValue={90}
+                              autoSelectOnFocus
                               className="w-14 text-center font-black text-white bg-slate-900 border border-gym-border/80 rounded-lg py-1 text-xs focus:border-emerald-500 focus:outline-none"
                             />
                             <span className="text-[10px] text-gray-400 font-bold">seg</span>
@@ -632,129 +1012,6 @@ export const RoutineEditorPage: React.FC = () => {
                             className="w-full text-xs text-gray-200 bg-transparent focus:outline-none placeholder-gray-500"
                           />
                         </div>
-                      </div>
-
-                      {/* Sección Detallada de Series (Configuración individual de peso y repeticiones) */}
-                      <div className="bg-slate-950/60 rounded-xl border border-gym-border/60 p-3 space-y-2.5">
-                        <div className="flex items-center justify-between text-xs pb-1.5 border-b border-gym-border/40 flex-wrap gap-2">
-                          <div className="flex items-center gap-2">
-                            <Layers className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="font-bold text-white tracking-wide text-xs">
-                              SERIES Y CARGAS ({sets.length})
-                            </span>
-                          </div>
-                          {sets.length > 1 && (
-                            <div className="flex items-center gap-2 text-[10px]">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleCopyWeightToAll(exIdx, sets[0]?.targetWeight ?? 0)
-                                }
-                                className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 hover:underline transition-colors"
-                                title="Copiar el peso de la Serie 1 a todas las demás"
-                              >
-                                <Copy className="w-3 h-3" />
-                                Mismo peso a todas
-                              </button>
-                              <span className="text-gray-600">|</span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleCopyRepsToAll(exIdx, sets[0]?.targetReps ?? 10)
-                                }
-                                className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 hover:underline transition-colors"
-                                title="Copiar las repeticiones de la Serie 1 a todas las demás"
-                              >
-                                <Copy className="w-3 h-3" />
-                                Mismas reps a todas
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Encabezado de columnas */}
-                        <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-400 px-1 uppercase tracking-wider">
-                          <div className="col-span-2 text-center">Serie</div>
-                          <div className="col-span-4 text-center">Reps</div>
-                          <div className="col-span-4 text-center">Peso (kg)</div>
-                          <div className="col-span-2 text-center">Borrar</div>
-                        </div>
-
-                        {/* Filas de Series */}
-                        <div className="space-y-1.5">
-                          {sets.map((set, setIdx) => (
-                            <div
-                              key={set.setNumber}
-                              className="grid grid-cols-12 gap-2 items-center bg-gym-card/80 hover:bg-gym-card p-1.5 rounded-xl border border-gym-border/50 transition-colors"
-                            >
-                              <div className="col-span-2 text-center">
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-900 border border-gym-border text-xs font-black text-emerald-400">
-                                  S{set.setNumber}
-                                </span>
-                              </div>
-
-                              <div className="col-span-4">
-                                <FlexibleNumericInput
-                                  value={set.targetReps}
-                                  onChange={(val) =>
-                                    handleUpdateSetField(exIdx, setIdx, 'targetReps', val)
-                                  }
-                                  min={1}
-                                  max={100}
-                                  step={1}
-                                  fallbackValue={10}
-                                  placeholder="10"
-                                  className="w-full text-center font-black text-white bg-slate-900 border border-gym-border rounded-lg py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
-                                />
-                              </div>
-
-                              <div className="col-span-4">
-                                <FlexibleNumericInput
-                                  value={set.targetWeight}
-                                  onChange={(val) =>
-                                    handleUpdateSetField(exIdx, setIdx, 'targetWeight', val)
-                                  }
-                                  min={0}
-                                  max={999}
-                                  step={0.5}
-                                  fallbackValue={0}
-                                  placeholder="0"
-                                  className="w-full text-center font-black text-emerald-400 bg-slate-900 border border-gym-border rounded-lg py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
-                                />
-                              </div>
-
-                              <div className="col-span-2 flex justify-center">
-                                <button
-                                  type="button"
-                                  disabled={sets.length <= 1}
-                                  onClick={() => handleRemoveSet(exIdx, setIdx)}
-                                  className={`p-1.5 rounded-lg transition-colors ${
-                                    sets.length <= 1
-                                      ? 'text-gray-600 cursor-not-allowed'
-                                      : 'text-gray-400 hover:text-red-400 hover:bg-red-500/10'
-                                  }`}
-                                  title={
-                                    sets.length <= 1
-                                      ? 'Debe haber al menos 1 serie'
-                                      : 'Eliminar esta serie'
-                                  }
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Botón "+ Agregar Serie" */}
-                        <button
-                          type="button"
-                          onClick={() => handleAddSet(exIdx)}
-                          className="w-full py-2 border border-dashed border-gym-border hover:border-emerald-500/80 rounded-xl text-xs font-bold text-gray-300 hover:text-emerald-400 bg-slate-900/40 hover:bg-emerald-500/5 transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <Plus className="w-3.5 h-3.5 stroke-[3] text-emerald-400" />
-                          Agregar Serie ({sets.length + 1})
-                        </button>
                       </div>
                     </div>
                   );
@@ -840,7 +1097,6 @@ export const RoutineEditorPage: React.FC = () => {
             ) : (
               groupedExercisesForModal.map((group) => (
                 <div key={group.muscle} className="space-y-2">
-                  {/* Encabezado del grupo muscular */}
                   <div className="flex items-center justify-between text-xs font-black text-gray-300 uppercase tracking-wider py-1 px-1 border-b border-gym-border/40">
                     <span className="flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -852,7 +1108,6 @@ export const RoutineEditorPage: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Ejercicios del grupo */}
                   <div className="space-y-1.5">
                     {group.exercises.map((ex) => (
                       <div
