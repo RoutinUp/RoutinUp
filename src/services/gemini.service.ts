@@ -112,8 +112,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
       throw new Error(`No se recibió contenido para el modelo ${modelName}`);
     };
 
-    // Modelos a intentar en orden de preferencia (gemini-1.5-flash-8b como principal para evitar saturación)
-    const modelsToTry = ['gemini-1.5-flash-8b', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+    // Modelos soportados: gemini-2.5-flash (principal) y gemini-2.0-flash (respaldo)
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash'];
     let lastError: any = null;
 
     for (const model of modelsToTry) {
