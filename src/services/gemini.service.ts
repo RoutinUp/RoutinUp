@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { MuscleGroup } from '../types/exercise';
 
 export interface AIGeneratedSet {
@@ -59,97 +59,79 @@ export const geminiService = {
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const promptText = `${SYSTEM_INSTRUCTION}
 
-    // Modelos soportados en v1beta: gemini-2.5-flash (principal) y gemini-2.0-flash (respaldo)
-    const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
-    let lastError: any = null;
+Texto del usuario:
+"${userPrompt.trim()}"
 
-    for (const modelName of candidateModels) {
-      try {
-        const response = await ai.models.generateContent({
-          model: modelName,
-          contents: `Convierte este texto en una rutina estructurada según las instrucciones:\n\n${userPrompt.trim()}`,
-          config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
-            responseMimeType: 'application/json',
-            responseJsonSchema: {
-              type: Type.OBJECT,
-              properties: {
-                nombre: {
-                  type: Type.STRING,
-                  description: 'Nombre de la rutina',
-                },
-                ejercicios: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      nombre: {
-                        type: Type.STRING,
-                        description: 'Nombre del ejercicio',
-                      },
-                      grupoMuscular: {
-                        type: Type.STRING,
-                        description: 'Grupo muscular principal',
-                      },
-                      series: {
-                        type: Type.ARRAY,
-                        items: {
-                          type: Type.OBJECT,
-                          properties: {
-                            reps: {
-                              type: Type.NUMBER,
-                              description: 'Número de repeticiones',
-                            },
-                            peso: {
-                              type: Type.NUMBER,
-                              description: 'Peso en kilogramos',
-                            },
-                          },
-                          required: ['reps', 'peso'],
-                        },
-                        description: 'Listado de series con su peso y reps',
-                      },
-                    },
-                    required: ['nombre', 'grupoMuscular', 'series'],
-                  },
-                  description: 'Lista de ejercicios de la rutina',
-                },
-              },
-              required: ['nombre', 'ejercicios'],
-            },
-          },
-        });
+IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especificado, sin ningún texto antes ni después.`;
 
-        const rawText = response.text || '';
-        const cleanedText = rawText
-          .replace(/```json/gi, '')
-          .replace(/```/g, '')
-          .trim();
+    let rawText = '';
 
-        const parsed: AIGeneratedRoutine = JSON.parse(cleanedText);
+    try {
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: promptText,
+      });
 
-        if (!parsed.nombre || !Array.isArray(parsed.ejercicios)) {
-          throw new Error('La respuesta de Gemini no contiene el formato esperado.');
-        }
+      rawText = response.text || '';
+    } catch (err: any) {
+      console.warn('Llamada con SDK @google/genai falló, intentando con endpoint directo:', err);
 
-        return parsed;
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`Error llamando a Gemini con modelo ${modelName}:`, err);
-        if (
-          err?.status === 400 &&
-          (err?.message?.includes('API_KEY_INVALID') || err?.message?.includes('API key'))
-        ) {
+      if (
+        err?.status === 400 &&
+        (err?.message?.includes('API_KEY_INVALID') || err?.message?.includes('API key'))
+      ) {
+        throw new Error('La clave configurada en el servidor es inválida.');
+      }
+
+      // Endpoint directo con fetch como respaldo
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: promptText }] }],
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const msg = errorData?.error?.message || res.statusText;
+        if (res.status === 400 && msg.includes('API_KEY_INVALID')) {
           throw new Error('La clave configurada en el servidor es inválida.');
         }
+        throw new Error(msg || 'Error al comunicarse con la API de Google Gemini.');
       }
+
+      const data = await res.json();
+      rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     }
 
-    throw new Error(
-      lastError?.message || 'No se pudo conectar con el servicio de Google Gemini.'
-    );
+    if (!rawText) {
+      throw new Error('No se recibió contenido en la respuesta de Gemini.');
+    }
+
+    const cleanedText = rawText
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim();
+
+    const firstBrace = cleanedText.indexOf('{');
+    const lastBrace = cleanedText.lastIndexOf('}');
+    const jsonStr =
+      firstBrace !== -1 && lastBrace !== -1
+        ? cleanedText.substring(firstBrace, lastBrace + 1)
+        : cleanedText;
+
+    const parsed: AIGeneratedRoutine = JSON.parse(jsonStr);
+
+    if (!parsed.nombre || !Array.isArray(parsed.ejercicios)) {
+      throw new Error('La respuesta de Gemini no contiene el formato esperado.');
+    }
+
+    return parsed;
   },
 
   /**
