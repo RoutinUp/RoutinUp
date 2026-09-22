@@ -87,6 +87,10 @@ const ORDERED_MUSCLE_GROUPS: MuscleGroup[] = [
 
 const PROMPT_SUGGESTIONS = [
   {
+    title: 'Torso / Pierna (2 Días)',
+    text: 'Día 1: Torso A. Press de banca plano 4x10 con 80kg, Remo con barra 4x8 con 70kg, Press militar con mancuernas 3x10 con 20kg, Jalón al pecho 3x12 con 60kg, Curl de bíceps 3x12 con 14kg, Extensiones de tríceps 3x12 con 25kg.\n\nDía 2: Piernas A. Sentadilla con barra 4x8 con 100kg, Prensa de piernas 4x10 con 180kg, Peso muerto rumano 3x10 con 80kg, Extensiones de cuádriceps 3x12 con 50kg, Gemelos en máquina 4x15 con 60kg.',
+  },
+  {
     title: 'Pecho y Tríceps',
     text: 'Rutina de Pecho y Tríceps: Press de banca plano 4 series de 10 reps con 80kg, Press inclinado con mancuernas 3 series de 10 reps con 26kg, Aperturas en polea 3x12 con 15kg, Fondos en paralelas 3x10 con peso corporal, Extensiones en polea alta piramidal: serie 1 25kg x 12, serie 2 30kg x 10, serie 3 35kg x 8.',
   },
@@ -523,107 +527,110 @@ export const RoutineEditorPage: React.FC = () => {
         `Generada con Gemini IA a partir de: "${aiPrompt.substring(0, 50)}..."`
       );
 
-      // 2. Mapear ejercicios devueltos al primer día
+      // 2. Mapear cada día y sus respectivos ejercicios devueltos por Gemini
       const customMap: Record<string, boolean> = {};
-      const mappedExercises: WorkoutDayExercise[] = generated.ejercicios.map(
-        (aiEx, idx) => {
-          const muscle = geminiService.mapToMuscleGroup(aiEx.grupoMuscular);
+      let totalExercisesCount = 0;
 
-          // Buscar si el ejercicio coincide con el catálogo existente
-          const normalizedAiName = aiEx.nombre.toLowerCase().trim();
-          const matchedCatalogEx = allExercises.find((catEx) => {
-            const catName = catEx.name.toLowerCase().trim();
-            return (
-              catName === normalizedAiName ||
-              catName.includes(normalizedAiName) ||
-              normalizedAiName.includes(catName)
+      const createdDays: WorkoutDay[] = generated.routine.map((aiDay, dayIdx) => {
+        const dayId = 'day-' + Math.random().toString(36).substring(2, 9);
+        const dayName = aiDay.dayName || `Día ${dayIdx + 1}: Entrenamiento`;
+
+        const mappedExercises: WorkoutDayExercise[] = (aiDay.exercises || []).map(
+          (aiEx, exIdx) => {
+            totalExercisesCount++;
+            const muscle = geminiService.mapToMuscleGroup(aiEx.grupoMuscular);
+
+            // Buscar si el ejercicio coincide con el catálogo existente
+            const normalizedAiName = aiEx.nombre.toLowerCase().trim();
+            const matchedCatalogEx = allExercises.find((catEx) => {
+              const catName = catEx.name.toLowerCase().trim();
+              return (
+                catName === normalizedAiName ||
+                catName.includes(normalizedAiName) ||
+                normalizedAiName.includes(catName)
+              );
+            });
+
+            const dayExId = 'd-ex-' + Math.random().toString(36).substring(2, 9);
+
+            const setsConfig: RoutineSetDetail[] =
+              aiEx.series && aiEx.series.length > 0
+                ? aiEx.series.map((s, sIdx) => ({
+                    setNumber: sIdx + 1,
+                    targetReps: s.reps || 10,
+                    targetWeight: s.peso || 0,
+                  }))
+                : Array.from({ length: 4 }, (_, sIdx) => ({
+                    setNumber: sIdx + 1,
+                    targetReps: 10,
+                    targetWeight: 0,
+                  }));
+
+            // Si los pesos o repeticiones varían entre series, activar el modo de desglose individual
+            const firstWeight = setsConfig[0]?.targetWeight ?? 0;
+            const firstReps = setsConfig[0]?.targetReps ?? 10;
+            const varies = setsConfig.some(
+              (s) => s.targetWeight !== firstWeight || s.targetReps !== firstReps
             );
-          });
+            if (varies) {
+              customMap[dayExId] = true;
+            }
 
-          const dayExId = 'd-ex-' + Math.random().toString(36).substring(2, 9);
+            // Si no existe en el catálogo, crear objeto sintético de ejercicio
+            const finalExercise: Exercise = matchedCatalogEx || {
+              id: 'ai-ex-' + Math.random().toString(36).substring(2, 9),
+              name: aiEx.nombre,
+              slug: aiEx.nombre.toLowerCase().replace(/\s+/g, '-'),
+              description: `Ejercicio generado por IA (${aiEx.grupoMuscular})`,
+              mainMuscleGroup: muscle,
+              secondaryMuscles: [],
+              equipment: 'otro',
+              exerciseType: 'aislamiento',
+              instructions: [],
+              techniqueTips: '',
+              difficultyLevel: 'intermedio',
+              isCustom: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
 
-          const setsConfig: RoutineSetDetail[] =
-            aiEx.series && aiEx.series.length > 0
-              ? aiEx.series.map((s, sIdx) => ({
-                  setNumber: sIdx + 1,
-                  targetReps: s.reps || 10,
-                  targetWeight: s.peso || 0,
-                }))
-              : Array.from({ length: 4 }, (_, sIdx) => ({
-                  setNumber: sIdx + 1,
-                  targetReps: 10,
-                  targetWeight: 0,
-                }));
-
-          // Si los pesos o repeticiones varían entre series, activar el modo de desglose individual
-          const firstWeight = setsConfig[0]?.targetWeight ?? 0;
-          const firstReps = setsConfig[0]?.targetReps ?? 10;
-          const varies = setsConfig.some(
-            (s) => s.targetWeight !== firstWeight || s.targetReps !== firstReps
-          );
-          if (varies) {
-            customMap[dayExId] = true;
+            return {
+              id: dayExId,
+              workoutDayId: dayId,
+              exerciseId: finalExercise.id,
+              exercise: finalExercise,
+              exerciseOrder: exIdx + 1,
+              targetSets: setsConfig.length,
+              targetRepsMin: setsConfig[0]?.targetReps ?? 10,
+              targetRepsMax: setsConfig[0]?.targetReps ?? 10,
+              targetWeight: setsConfig[0]?.targetWeight ?? 0,
+              restSeconds: 90,
+              notes: '',
+              setsConfig,
+            };
           }
+        );
 
-          // Si no existe en el catálogo, crear objeto sintético de ejercicio
-          const finalExercise: Exercise = matchedCatalogEx || {
-            id: 'ai-ex-' + Math.random().toString(36).substring(2, 9),
-            name: aiEx.nombre,
-            slug: aiEx.nombre.toLowerCase().replace(/\s+/g, '-'),
-            description: `Ejercicio generado por IA (${aiEx.grupoMuscular})`,
-            mainMuscleGroup: muscle,
-            secondaryMuscles: [],
-            equipment: 'otro',
-            exerciseType: 'aislamiento',
-            instructions: [],
-            techniqueTips: '',
-            difficultyLevel: 'intermedio',
-            isCustom: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-
-          return {
-            id: dayExId,
-            workoutDayId: days[0]?.id || 'day-1',
-            exerciseId: finalExercise.id,
-            exercise: finalExercise,
-            exerciseOrder: idx + 1,
-            targetSets: setsConfig.length,
-            targetRepsMin: setsConfig[0]?.targetReps ?? 10,
-            targetRepsMax: setsConfig[0]?.targetReps ?? 10,
-            targetWeight: setsConfig[0]?.targetWeight ?? 0,
-            restSeconds: 90,
-            notes: '',
-            setsConfig,
-          };
-        }
-      );
-
-      // 3. Cargar en el día activo
-      const updatedDays = [...days];
-      if (updatedDays.length === 0) {
-        updatedDays.push({
-          id: 'day-' + Math.random().toString(36).substring(2, 9),
+        return {
+          id: dayId,
           routineId: id || '',
-          name: 'Día 1: Entrenamiento',
-          dayOrder: 1,
-          exercises: mappedExercises,
-        });
-      } else {
-        updatedDays[activeDayIndex] = {
-          ...updatedDays[activeDayIndex],
+          name: dayName,
+          dayOrder: dayIdx + 1,
           exercises: mappedExercises,
         };
-      }
+      });
 
-      setDays(updatedDays);
+      // 3. Cargar todos los días generados en el estado
+      setDays(createdDays);
+      setActiveDayIndex(0);
       setCustomizedExercises((prev) => ({ ...prev, ...customMap }));
 
       // 4. Cambiar automáticamente al formulario manual para revisión
       setCreationMode('manual');
       setAiSuccessMessage(
-        `¡Rutina "${generated.nombre}" generada con ${mappedExercises.length} ejercicios! Revisa y ajusta los datos antes de guardar.`
+        `¡Rutina "${generated.nombre}" generada con ${createdDays.length} ${
+          createdDays.length === 1 ? 'día' : 'días'
+        } y ${totalExercisesCount} ejercicios! Revisa y ajusta cada día antes de guardar.`
       );
     } catch (err: any) {
       console.error('Error generando rutina con IA:', err);
