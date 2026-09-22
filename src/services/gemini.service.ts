@@ -61,8 +61,8 @@ export const geminiService = {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    // Modelos a intentar en orden de preferencia
-    const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    // Modelos soportados en v1beta: gemini-2.5-flash (principal) y gemini-2.0-flash (respaldo)
+    const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash'];
     let lastError: any = null;
 
     for (const modelName of candidateModels) {
