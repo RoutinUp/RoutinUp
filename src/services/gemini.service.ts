@@ -112,8 +112,12 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
       throw new Error(`No se recibió contenido para el modelo ${modelName}`);
     };
 
-    // Modelos soportados: gemini-2.5-flash (principal) y gemini-2.0-flash (respaldo)
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    // Modelos a intentar en orden de preferencia: principal gemini-3.6-flash, con fallbacks a 1.5
+    const modelsToTry = [
+      'gemini-3.6-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-8b',
+    ];
     let lastError: any = null;
 
     for (const model of modelsToTry) {
@@ -123,26 +127,15 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
       } catch (err: any) {
         lastError = err;
         const msg = String(err?.message || '').toLowerCase();
-        const status = err?.status;
-        const isOverloadedOrRateLimited =
-          status === 503 ||
-          status === 429 ||
-          msg.includes('503') ||
-          msg.includes('429') ||
-          msg.includes('high demand') ||
-          msg.includes('resource_exhausted') ||
-          msg.includes('overloaded');
 
-        if (isOverloadedOrRateLimited) {
-          console.warn(`Modelo ${model} saturado o con límite temporal, intentando siguiente modelo...`);
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          continue;
-        }
-
-        // Si es otro error (por ejemplo clave no autorizada), no reintentar
-        if (msg.includes('api_key_invalid') || msg.includes('api key')) {
+        // Si es clave inválida en el servidor, no reintentar
+        if (msg.includes('api_key_invalid')) {
           throw err;
         }
+
+        console.warn(`Modelo ${model} no disponible o falló (${err?.message}), probando siguiente modelo de respaldo...`);
+        // Pasa inmediatamente al siguiente modelo del array sin romper la UI
+        continue;
       }
     }
 
