@@ -1,4 +1,4 @@
-﻿export interface AppBrandConfig {
+export interface AppBrandConfig {
   name: string;
   shortName: string;
   tagline: string;
@@ -20,16 +20,16 @@
 }
 
 export const APP_CONFIG: AppBrandConfig = {
-  name: 'GymTrack',
-  shortName: 'GymTrack',
+  name: 'RoutinUP',
+  shortName: 'RoutinUP',
   tagline: 'Entrena con foco, supera tus límites',
   description: 'Aplicación mobile-first para crear, gestionar y ejecutar rutinas de gimnasio con seguimiento inteligente.',
   version: '1.0.0',
   defaultWeightUnit: 'kg',
   weightIncrements: [1, 1.25, 2.5, 5],
   defaultRestSeconds: 90,
-  repositoryUrl: 'https://github.com/usuario/gymtrack',
-  supportEmail: 'soporte@gymtrack.app',
+  repositoryUrl: 'https://github.com/RoutinUp/RoutinUp',
+  supportEmail: 'soporte@routinup.app',
   theme: {
     accentColor: '#10B981', // Verde esmeralda deportivo
     accentDark: '#059669',

@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { isSupabaseConfigured } from '../../config/supabase';
@@ -83,7 +83,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   const displayName = profile?.displayName || user?.user_metadata?.full_name || 'Atleta';
-  const email = user?.email || (isSupabaseConfigured ? '' : 'modo_local@gymtrack.app');
+  const email = user?.email || (isSupabaseConfigured ? '' : 'modo_local@routinup.app');
 
   return (
     <div className="space-y-4 pb-20">

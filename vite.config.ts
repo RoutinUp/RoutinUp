@@ -1,4 +1,4 @@
-﻿import { defineConfig } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'placeholder-exercise.svg'],
       manifest: {
-        name: 'GymTrack - Workout Tracker',
-        short_name: 'GymTrack',
+        name: 'RoutinUP - Workout Tracker',
+        short_name: 'RoutinUP',
         description: 'Aplicación mobile-first para crear, gestionar y ejecutar rutinas de gimnasio',
         theme_color: '#0B0F17',
         background_color: '#0B0F17',

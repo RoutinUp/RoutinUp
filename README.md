@@ -1,13 +1,13 @@
-﻿# 🏋️ GymTrack - Aplicación Web Mobile-First de Entrenamiento
+# 🏋️ RoutinUP - Aplicación Web Mobile-First de Entrenamiento
 
-**GymTrack** es una aplicación web progresiva (PWA) de alto rendimiento diseñada con un enfoque **mobile-first**, creada para planificar, gestionar y ejecutar entrenamientos de gimnasio en una experiencia interactiva basada en **tarjetas deslizables (swipe cards)**, descansos cronometrados automáticos, seguimiento de récords personales (PRs), sugerencias de peso inteligentes y persistencia completa en **Supabase** (PostgreSQL).
+**RoutinUP** es una aplicación web progresiva (PWA) de alto rendimiento diseñada con un enfoque **mobile-first**, creada para planificar, gestionar y ejecutar entrenamientos de gimnasio en una experiencia interactiva basada en **tarjetas deslizables (swipe cards)**, descansos cronometrados automáticos, seguimiento de récords personales (PRs), sugerencias de peso inteligentes y persistencia completa en **Supabase** (PostgreSQL).
 
 ---
 
 ## 🚀 Características Principales
 
 1. **Nombre y Marca Centralizados:**
-   - La marca "GymTrack", colores, incremento de pesos y textos están centralizados en `src/config/app.config.ts` para cambiar el nombre o estilo de la aplicación en un solo archivo.
+   - La marca "RoutinUP", colores, incremento de pesos y textos están centralizados en `src/config/app.config.ts` para cambiar el nombre o estilo de la aplicación en un solo archivo.
 
 2. **Experiencia de Entrenamiento Inmersiva Basada en Tarjetas (Swipe Deck):**
    - Interfaz a pantalla completa optimizada para uso con **una sola mano**.
