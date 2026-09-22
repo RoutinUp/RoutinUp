@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { WorkoutDay } from '../types/routine';
 import { WorkoutCard, SetCardData, RestCardData, WorkoutSession, LoggedExercise, LoggedSet } from '../types/workout';
@@ -76,7 +76,15 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
 
           const lastSet = pastExercise?.sets?.[pastExercise.sets.length - 1];
 
-          for (let setNum = 1; setNum <= dayEx.targetSets; setNum++) {
+          const totalSets = dayEx.setsConfig && dayEx.setsConfig.length > 0
+            ? dayEx.setsConfig.length
+            : dayEx.targetSets;
+
+          for (let setNum = 1; setNum <= totalSets; setNum++) {
+            const specificSet = dayEx.setsConfig?.find((s) => s.setNumber === setNum);
+            const targetWeight = specificSet !== undefined ? specificSet.targetWeight : (dayEx.targetWeight || 0);
+            const targetReps = specificSet !== undefined ? specificSet.targetReps : (dayEx.targetRepsMax || 10);
+
             // 1. Tarjeta de Serie
             const setCard: SetCardData = {
               kind: 'set',
@@ -87,10 +95,10 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
               exerciseOrder: exIndex + 1,
               totalExercisesInDay: totalExercises,
               setNumber: setNum,
-              totalSets: dayEx.targetSets,
-              targetRepsMin: dayEx.targetRepsMin,
-              targetRepsMax: dayEx.targetRepsMax,
-              targetWeight: dayEx.targetWeight,
+              totalSets,
+              targetRepsMin: specificSet ? specificSet.targetReps : dayEx.targetRepsMin,
+              targetRepsMax: specificSet ? specificSet.targetReps : dayEx.targetRepsMax,
+              targetWeight,
               restSeconds: dayEx.restSeconds,
               notes: dayEx.notes,
               lastPerformance: lastSet
@@ -102,8 +110,8 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
                 : undefined,
               suggestedWeight: suggestion.suggestedWeight,
               completed: false,
-              loggedWeight: suggestion.suggestedWeight || dayEx.targetWeight || 0,
-              loggedReps: dayEx.targetRepsMax || 10,
+              loggedWeight: targetWeight,
+              loggedReps: targetReps,
             };
             flatCards.push(setCard);
 

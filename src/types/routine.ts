@@ -1,4 +1,10 @@
-﻿import { Exercise } from './exercise';
+import { Exercise } from './exercise';
+
+export interface RoutineSetDetail {
+  setNumber: number;
+  targetReps: number;
+  targetWeight: number;
+}
 
 export interface WorkoutDayExercise {
   id: string;
@@ -12,6 +18,7 @@ export interface WorkoutDayExercise {
   targetWeight: number; // en kg o unidad preferida
   restSeconds: number; // en segundos (ej. 120)
   notes?: string;
+  setsConfig?: RoutineSetDetail[];
 }
 
 export interface WorkoutDay {
@@ -48,6 +55,7 @@ export interface CreateRoutineInput {
       targetWeight: number;
       restSeconds: number;
       notes?: string;
+      setsConfig?: RoutineSetDetail[];
     }[];
   }[];
 }

@@ -1,4 +1,4 @@
-﻿import { supabase, isSupabaseConfigured } from '../config/supabase';
+import { supabase, isSupabaseConfigured } from '../config/supabase';
 import { WorkoutRoutine } from '../types/routine';
 import { exerciseService } from './exercise.service';
 
@@ -173,20 +173,33 @@ export const routineService = {
 
     if (!isSupabaseConfigured) {
       const stored = localStorage.getItem(getUserRoutinesKey(userId));
-      let routines: WorkoutRoutine[] = stored ? JSON.parse(stored) : [];
-      if (routines.length === 0) {
+      let routines: WorkoutRoutine[] = [];
+      if (stored === null) {
+        // Primera vez absoluta en modo local: ofrecer preset inicial
         routines = DEFAULT_PRESET_ROUTINES.map(r => ({ ...r, userId }));
         localStorage.setItem(getUserRoutinesKey(userId), JSON.stringify(routines));
+      } else {
+        routines = JSON.parse(stored);
       }
 
       return routines.map((r) => ({
         ...r,
         days: r.days.map((d) => ({
           ...d,
-          exercises: d.exercises.map((e) => ({
-            ...e,
-            exercise: exerciseMap.get(e.exerciseId),
-          })),
+          exercises: d.exercises.map((e) => {
+            const setsConfig = e.setsConfig && e.setsConfig.length > 0
+              ? e.setsConfig
+              : Array.from({ length: e.targetSets || 3 }, (_, idx) => ({
+                  setNumber: idx + 1,
+                  targetReps: e.targetRepsMin || 10,
+                  targetWeight: e.targetWeight || 0,
+                }));
+            return {
+              ...e,
+              setsConfig,
+              exercise: exerciseMap.get(e.exerciseId),
+            };
+          }),
         })),
       }));
     }
@@ -199,8 +212,7 @@ export const routineService = {
           workout_days (
             id, name, day_order, created_at, updated_at,
             workout_day_exercises (
-              id, exercise_id, exercise_order, target_sets, target_reps_min,
-              target_reps_max, target_weight, rest_seconds, notes
+              *
             )
           )
         `)
@@ -213,19 +225,10 @@ export const routineService = {
         return stored ? JSON.parse(stored) : [];
       }
 
-      // Si el usuario es nuevo en Supabase y no tiene rutinas creadas, sugerir el preset PPL inicial
+      // Si el usuario no tiene rutinas creadas (o las eliminó todas), retornar lista vacía
       if (data.length === 0) {
-        return DEFAULT_PRESET_ROUTINES.map((r) => ({
-          ...r,
-          userId,
-          days: r.days.map((d) => ({
-            ...d,
-            exercises: d.exercises.map((e) => ({
-              ...e,
-              exercise: exerciseMap.get(e.exerciseId),
-            })),
-          })),
-        }));
+        localStorage.setItem(getUserRoutinesKey(userId), JSON.stringify([]));
+        return [];
       }
 
       const routines: WorkoutRoutine[] = data.map((r: any) => ({
@@ -245,19 +248,31 @@ export const routineService = {
             dayOrder: d.day_order,
             exercises: (d.workout_day_exercises || [])
               .sort((a: any, b: any) => a.exercise_order - b.exercise_order)
-              .map((e: any) => ({
-                id: e.id,
-                workoutDayId: d.id,
-                exerciseId: e.exercise_id,
-                exercise: exerciseMap.get(e.exercise_id),
-                exerciseOrder: e.exercise_order,
-                targetSets: e.target_sets,
-                targetRepsMin: e.target_reps_min,
-                targetRepsMax: e.target_reps_max,
-                targetWeight: Number(e.target_weight) || 0,
-                restSeconds: e.rest_seconds,
-                notes: e.notes || '',
-              })),
+              .map((e: any) => {
+                const rawSets = Array.isArray(e.sets_config) ? e.sets_config : [];
+                const setsConfig = rawSets.length > 0
+                  ? rawSets
+                  : Array.from({ length: e.target_sets || 3 }, (_, idx) => ({
+                      setNumber: idx + 1,
+                      targetReps: e.target_reps_min || 10,
+                      targetWeight: Number(e.target_weight) || 0,
+                    }));
+
+                return {
+                  id: e.id,
+                  workoutDayId: d.id,
+                  exerciseId: e.exercise_id,
+                  exercise: exerciseMap.get(e.exercise_id),
+                  exerciseOrder: e.exercise_order,
+                  targetSets: setsConfig.length || e.target_sets || 3,
+                  targetRepsMin: e.target_reps_min,
+                  targetRepsMax: e.target_reps_max,
+                  targetWeight: Number(e.target_weight) || 0,
+                  restSeconds: e.rest_seconds,
+                  notes: e.notes || '',
+                  setsConfig,
+                };
+              }),
           })),
       }));
 
@@ -333,38 +348,109 @@ export const routineService = {
         for (let exIdx = 0; exIdx < day.exercises.length; exIdx++) {
           const ex = day.exercises[exIdx];
           const isExNew = ex.id.startsWith('d-ex-');
-          await supabase.from('workout_day_exercises').upsert({
+          const exercisePayload: any = {
             id: isExNew ? undefined : ex.id,
             workout_day_id: dayData.id,
             exercise_id: ex.exerciseId,
             exercise_order: exIdx + 1,
-            target_sets: ex.targetSets,
+            target_sets: ex.setsConfig?.length || ex.targetSets,
             target_reps_min: ex.targetRepsMin,
             target_reps_max: ex.targetRepsMax,
             target_weight: ex.targetWeight,
             rest_seconds: ex.restSeconds,
             notes: ex.notes || '',
-          });
+            sets_config: ex.setsConfig || [],
+          };
+
+          const { error: exError } = await supabase
+            .from('workout_day_exercises')
+            .upsert(exercisePayload);
+
+          // Fallback resiliente si la columna sets_config aún no fue ejecutada en Supabase SQL Editor
+          if (exError && (exError.message?.includes('sets_config') || (exError as any).code === '42703')) {
+            delete exercisePayload.sets_config;
+            await supabase.from('workout_day_exercises').upsert(exercisePayload);
+          }
         }
       }
     }
 
-    return routine;
+    // Actualizar cache local
+    const userKey = getUserRoutinesKey(userId);
+    const stored = localStorage.getItem(userKey);
+    let list: WorkoutRoutine[] = stored ? JSON.parse(stored) : [];
+    const index = list.findIndex((r) => r.id === routine.id);
+    if (index >= 0) {
+      list[index] = { ...routine, id: realRoutineId, updatedAt: new Date().toISOString() };
+    } else {
+      list.push({ ...routine, id: realRoutineId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    }
+    localStorage.setItem(userKey, JSON.stringify(list));
+
+    return { ...routine, id: realRoutineId };
   },
 
   // Eliminar una rutina del usuario actual
   async deleteRoutine(routineId: string, userId?: string): Promise<void> {
     if (!userId) return;
 
-    if (!isSupabaseConfigured) {
-      const userKey = getUserRoutinesKey(userId);
-      const stored = localStorage.getItem(userKey);
-      let list: WorkoutRoutine[] = stored ? JSON.parse(stored) : [];
-      list = list.filter((r) => r.id !== routineId);
-      localStorage.setItem(userKey, JSON.stringify(list));
-      return;
+    // 1. Limpiar siempre de la caché local de inmediato
+    const userKey = getUserRoutinesKey(userId);
+    const stored = localStorage.getItem(userKey);
+    if (stored) {
+      try {
+        const list: WorkoutRoutine[] = JSON.parse(stored);
+        const filtered = list.filter((r) => r.id !== routineId);
+        localStorage.setItem(userKey, JSON.stringify(filtered));
+      } catch (e) {
+        console.warn('Error sincronizando localStorage tras borrado:', e);
+      }
     }
 
-    await supabase.from('workout_routines').delete().eq('id', routineId).eq('user_id', userId);
+    if (!isSupabaseConfigured) return;
+
+    // Si es un ID temporal de preset, no existe en la base de datos remota
+    if (routineId.startsWith('rot-')) return;
+
+    // 2. Eliminar de Supabase (las tablas hijas se borran en cascada por FK ON DELETE CASCADE)
+    const { error } = await supabase
+      .from('workout_routines')
+      .delete()
+      .eq('id', routineId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error deleting routine from Supabase:', error);
+      throw error;
+    }
+  },
+
+  // Obtener presets predeterminados (para importar si el usuario lo desea)
+  getDefaultPresets(userId?: string): WorkoutRoutine[] {
+    return DEFAULT_PRESET_ROUTINES.map((r) => ({
+      ...r,
+      id: 'rot-' + Math.random().toString(36).substring(2, 9),
+      userId: userId || 'anonymous',
+      days: r.days.map((d) => ({
+        ...d,
+        id: 'day-' + Math.random().toString(36).substring(2, 9),
+        exercises: d.exercises.map((e) => ({
+          ...e,
+          id: 'd-ex-' + Math.random().toString(36).substring(2, 9),
+          setsConfig: Array.from({ length: e.targetSets }, (_, idx) => ({
+            setNumber: idx + 1,
+            targetReps: e.targetRepsMin,
+            targetWeight: e.targetWeight,
+          })),
+        })),
+      })),
+    }));
+  },
+
+  // Importar y guardar preset predeterminado en la cuenta del usuario
+  async importDefaultPreset(userId?: string): Promise<WorkoutRoutine> {
+    const presets = this.getDefaultPresets(userId);
+    const ppl = presets[0];
+    return await this.saveRoutine(ppl, userId);
   }
 };

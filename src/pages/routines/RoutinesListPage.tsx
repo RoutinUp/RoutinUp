@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { routineService } from '../../services/routine.service';
 import { workoutService } from '../../services/workout.service';
@@ -46,11 +46,37 @@ export const RoutinesListPage: React.FC = () => {
     navigate('/workout/active');
   };
 
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isImportingPreset, setIsImportingPreset] = useState(false);
+
   const handleDelete = async () => {
     if (!deleteRoutineId) return;
-    await routineService.deleteRoutine(deleteRoutineId, user?.id);
+    const targetId = deleteRoutineId;
+    // Actualización optimista inmediata en la UI
+    setRoutines((prev) => prev.filter((r) => r.id !== targetId));
     setDeleteRoutineId(null);
-    await loadRoutines();
+    try {
+      setIsDeleting(true);
+      await routineService.deleteRoutine(targetId, user?.id);
+    } catch (err) {
+      console.error('Error eliminando rutina:', err);
+      await loadRoutines();
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleImportPreset = async () => {
+    try {
+      setIsImportingPreset(true);
+      const newRoutine = await routineService.importDefaultPreset(user?.id);
+      setRoutines([newRoutine]);
+      setExpandedRoutineId(newRoutine.id);
+    } catch (err) {
+      console.error('Error importando rutina base:', err);
+    } finally {
+      setIsImportingPreset(false);
+    }
   };
 
   return (
@@ -67,18 +93,41 @@ export const RoutinesListPage: React.FC = () => {
         </Link>
       </div>
 
-      {routines.length === 0 ? (
-        <div className="text-center py-12 rounded-3xl bg-gym-card border border-gym-border/70 p-6">
-          <Calendar className="w-12 h-12 text-gray-500 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-white">No tienes rutinas todavía</h3>
-          <p className="text-xs text-gray-400 mt-1 mb-4">
-            Crea una rutina personalizada o elige una plantilla base para comenzar.
-          </p>
-          <Link to="/routines/new">
-            <Button size="md" variant="primary" icon={<Plus className="w-4 h-4" />}>
-              CREAR RUTINA
+      {isLoading ? (
+        <div className="text-center py-12">
+          <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <span className="text-xs text-gray-400">Cargando tus rutinas...</span>
+        </div>
+      ) : routines.length === 0 ? (
+        <div className="rounded-3xl bg-gym-card border border-gym-border/90 p-6 sm:p-8 text-center space-y-5 shadow-2xl">
+          <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto shadow-glow-primary">
+            <Dumbbell className="w-8 h-8" />
+          </div>
+          <div className="space-y-1.5 max-w-xs mx-auto">
+            <h3 className="text-lg font-black text-white tracking-tight">
+              No tienes ninguna rutina creada
+            </h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Crea tu propia rutina con series y pesos personalizados para cada ejercicio, o comienza con una plantilla probada.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center max-w-sm mx-auto">
+            <Link to="/routines/new" className="w-full">
+              <Button size="lg" fullWidth variant="primary" icon={<Plus className="w-5 h-5 stroke-[2.5]" />}>
+                CREAR NUEVA RUTINA
+              </Button>
+            </Link>
+            <Button
+              size="lg"
+              fullWidth
+              variant="secondary"
+              isLoading={isImportingPreset}
+              onClick={handleImportPreset}
+            >
+              Cargar Plantilla (PPL)
             </Button>
-          </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Minus } from 'lucide-react';
 
 interface QuickNumberStepperProps {
@@ -22,6 +22,14 @@ export const QuickNumberStepper: React.FC<QuickNumberStepperProps> = ({
   quickIncrements = [],
   unit = '',
 }) => {
+  const [localText, setLocalText] = useState<string>(value !== undefined && value !== null ? value.toString() : '');
+
+  useEffect(() => {
+    const parsed = parseFloat(localText);
+    if (isNaN(parsed) || parsed !== value) {
+      setLocalText(value !== undefined && value !== null ? value.toString() : '');
+    }
+  }, [value]);
   const handleDecrement = () => {
     const next = Math.max(min, Math.round((value - step) * 10) / 10);
     onChange(next);
@@ -57,10 +65,23 @@ export const QuickNumberStepper: React.FC<QuickNumberStepperProps> = ({
         <div className="flex-1 text-center">
           <input
             type="number"
-            value={value || ''}
+            value={localText}
             onChange={(e) => {
+              setLocalText(e.target.value);
               const val = parseFloat(e.target.value);
-              onChange(isNaN(val) ? 0 : val);
+              if (!isNaN(val)) {
+                onChange(val);
+              }
+            }}
+            onBlur={() => {
+              let parsed = parseFloat(localText);
+              if (isNaN(parsed) || localText.trim() === '') {
+                parsed = min;
+              }
+              if (parsed < min) parsed = min;
+              if (parsed > max) parsed = max;
+              setLocalText(parsed.toString());
+              onChange(parsed);
             }}
             className="w-full text-center text-2xl font-black bg-transparent text-white focus:outline-none"
           />
