@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabase';
 import { UserProfile, UpdateProfileInput } from '../types/user';
-import { getAppRedirectUrl } from '../utils/url';
+import { getAppBaseUrl, getAppRedirectUrl } from '../utils/url';
 
 export const authService = {
   // Obtener sesión actual de Supabase
@@ -156,7 +156,7 @@ export const authService = {
     return await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: getAppRedirectUrl(''),
+        redirectTo: getAppBaseUrl(),
       },
     });
   },

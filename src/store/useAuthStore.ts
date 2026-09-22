@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { supabase } from '../config/supabase';
 import { authService } from '../services/auth.service';
 import { UserProfile, UpdateProfileInput } from '../types/user';
@@ -28,6 +28,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initialize: async () => {
     try {
       set({ isLoading: true });
+
+      // 0. Canjear código OAuth (PKCE) si viene en search o atrapado en hash
+      if (typeof window !== 'undefined') {
+        let code: string | null = null;
+        const searchParams = new URLSearchParams(window.location.search);
+        code = searchParams.get('code');
+
+        if (!code && window.location.hash.includes('code=')) {
+          const hashQuery = window.location.hash.includes('?')
+            ? window.location.hash.split('?')[1]
+            : window.location.hash.replace(/^#\/?/, '');
+          if (hashQuery) {
+            const hashParams = new URLSearchParams(hashQuery);
+            code = hashParams.get('code');
+          }
+        }
+
+        if (code) {
+          try {
+            await supabase.auth.exchangeCodeForSession(code);
+            const cleanUrl = window.location.origin + window.location.pathname + '#/';
+            window.history.replaceState({}, document.title, cleanUrl);
+          } catch (exchangeErr) {
+            console.warn('Error canjeando código de sesión:', exchangeErr);
+          }
+        }
+      }
 
       // 1. Obtener la sesión actual persistida de Supabase
       const session = await authService.getSession();
