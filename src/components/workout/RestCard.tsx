@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RestCardData } from '../../types/workout';
 import { Button } from '../common/Button';
 import { formatDuration } from '../../utils/formatters';
@@ -46,20 +46,20 @@ export const RestCard: React.FC<RestCardProps> = ({
   const progressPercent = Math.min(100, Math.max(0, ((totalTime - timeLeft) / totalTime) * 100));
 
   return (
-    <div className="w-full h-full flex flex-col justify-between bg-gradient-to-b from-[#151D2A] to-[#0D131F] rounded-3xl border border-gym-border/80 shadow-2xl p-5 overflow-y-auto">
+    <div className="w-full flex flex-col bg-gradient-to-b from-[#151D2A] to-[#0D131F] rounded-3xl border border-gym-border/80 shadow-2xl p-4 sm:p-5">
       {/* Header */}
       <div className="text-center">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
           <Flame className="w-3.5 h-3.5" />
           RECUPERACIÓN
         </span>
-        <h2 className="text-2xl font-black text-white mt-1">Tiempo de Descanso</h2>
+        <h2 className="text-xl sm:text-2xl font-black text-white mt-1">Tiempo de Descanso</h2>
         <p className="text-xs text-gray-400">Respira profundamente y prepárate para la siguiente serie</p>
       </div>
 
       {/* Reloj Central Regresivo */}
-      <div className="flex flex-col items-center justify-center my-4">
-        <div className="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center my-3 sm:my-4">
+        <div className="relative w-36 h-36 sm:w-48 sm:h-48 flex items-center justify-center">
           {/* Círculo SVG de progreso */}
           <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
             <circle
@@ -86,10 +86,10 @@ export const RestCard: React.FC<RestCardProps> = ({
 
           {/* Tiempo digital en el centro */}
           <div className="absolute flex flex-col items-center justify-center">
-            <span className="text-5xl sm:text-6xl font-black text-white tracking-tighter font-mono">
+            <span className="text-4xl sm:text-5xl font-black text-white tracking-tighter font-mono">
               {formatDuration(timeLeft)}
             </span>
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
               Restante
             </span>
           </div>

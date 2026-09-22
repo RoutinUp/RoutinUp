@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { isSupabaseConfigured } from '../../config/supabase';
 import { APP_CONFIG } from '../../config/app.config';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import {
   User,
-  ShieldCheck,
-  Database,
   LogOut,
-  ExternalLink,
   Edit3,
   Ruler,
   Weight,
@@ -24,7 +20,6 @@ export const SettingsPage: React.FC = () => {
   const { user, profile, updateProfile, signOut } = useAuthStore();
   const [unit, setUnit] = useState<'kg' | 'lb'>('kg');
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [showConfigModal, setShowConfigModal] = useState(false);
 
   // Estado para modal de edición de perfil
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
@@ -83,7 +78,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   const displayName = profile?.displayName || user?.user_metadata?.full_name || 'Atleta';
-  const email = user?.email || (isSupabaseConfigured ? '' : 'modo_local@routinup.app');
+  const email = user?.email || 'atleta@routinup.app';
 
   return (
     <div className="space-y-4 pb-20">
@@ -159,40 +154,6 @@ export const SettingsPage: React.FC = () => {
             </button>
           </div>
         )}
-      </div>
-
-      {/* Estado del Backend / Supabase */}
-      <div className="p-4 rounded-3xl bg-gym-card border border-gym-border/80 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white">Estado de Supabase</h3>
-          </div>
-          <span
-            className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
-              isSupabaseConfigured
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-            }`}
-          >
-            {isSupabaseConfigured ? 'Supabase Conectado' : 'Modo Local / Demo'}
-          </span>
-        </div>
-
-        <p className="text-xs text-gray-400 leading-relaxed">
-          {isSupabaseConfigured
-            ? 'Tu aplicación está conectada a Supabase Cloud con PostgreSQL y Row Level Security activo.'
-            : 'Faltan credenciales en el archivo .env. Añádelas para sincronizar tu cuenta en la nube.'}
-        </p>
-
-        <button
-          type="button"
-          onClick={() => setShowConfigModal(true)}
-          className="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors pt-1"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          Ver instrucciones de configuración de Supabase
-        </button>
       </div>
 
       {/* Preferencias de Entrenamiento */}
@@ -354,34 +315,6 @@ export const SettingsPage: React.FC = () => {
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Modal Guía Supabase */}
-      <Modal
-        isOpen={showConfigModal}
-        onClose={() => setShowConfigModal(false)}
-        title="Configuración de Supabase"
-        maxWidth="md"
-      >
-        <div className="space-y-3 text-xs text-gray-300 leading-relaxed">
-          <p>
-            Tu proyecto utiliza el cliente de Supabase con PostgreSQL:
-          </p>
-          <ol className="list-decimal list-inside space-y-1.5 text-gray-200">
-            <li>Copia todo el contenido de <strong className="text-emerald-400">supabase/seed.sql</strong>.</li>
-            <li>En tu panel de Supabase ➔ <strong className="text-white">SQL Editor</strong> ➔ <strong className="text-white">New Query</strong>, pega el código y dale a <strong className="text-emerald-400">RUN</strong>.</li>
-            <li>En <strong className="text-white">Project Settings ➔ API</strong>, verifica tu URL y publishable key en <code className="text-emerald-400">.env</code>.</li>
-          </ol>
-
-          <Button
-            size="md"
-            fullWidth
-            variant="primary"
-            onClick={() => setShowConfigModal(false)}
-          >
-            ENTENDIDO
-          </Button>
-        </div>
       </Modal>
     </div>
   );

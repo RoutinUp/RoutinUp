@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { WorkoutCard } from '../../types/workout';
 import { SetCard } from './SetCard';
@@ -50,9 +50,9 @@ export const SwipeableDeck: React.FC<SwipeableDeckProps> = ({
   const progressPercent = Math.round(((currentIndex + 1) / cards.length) * 100);
 
   return (
-    <div className="w-full h-full flex flex-col justify-between select-none relative overflow-hidden">
+    <div className="w-full flex flex-col select-none relative">
       {/* 1. Barra de progreso superior discreta */}
-      <div className="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden mb-2">
+      <div className="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden mb-2 flex-shrink-0">
         <div
           className="bg-emerald-500 h-full transition-all duration-300 rounded-full shadow-glow-primary"
           style={{ width: `${progressPercent}%` }}
@@ -60,7 +60,7 @@ export const SwipeableDeck: React.FC<SwipeableDeckProps> = ({
       </div>
 
       {/* 2. Área principal de la tarjeta con animación y swipe */}
-      <div className="flex-1 w-full relative flex items-center justify-center min-h-[460px]">
+      <div className="w-full relative flex items-center justify-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentCard.cardIndex}
@@ -72,7 +72,7 @@ export const SwipeableDeck: React.FC<SwipeableDeckProps> = ({
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.96, x: -20 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
-            className="w-full h-full cursor-grab active:cursor-grabbing touch-pan-y"
+            className="w-full cursor-grab active:cursor-grabbing touch-pan-y"
           >
             {currentCard.kind === 'set' ? (
               <SetCard
@@ -92,13 +92,13 @@ export const SwipeableDeck: React.FC<SwipeableDeckProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* 3. Controles visuales accesibles inferiores para navegar con o sin swipe */}
-      <div className="flex items-center justify-between gap-3 mt-3 pt-2 border-t border-gym-border/40 px-1">
+      {/* 3. Controles visuales accesibles inferiores para navegar con o sin swipe (Fijos abajo) */}
+      <div className="sticky bottom-0 z-20 bg-gym-bg/95 backdrop-blur-md flex items-center justify-between gap-3 py-2.5 mt-2.5 border-t border-gym-border/40 px-1">
         <button
           type="button"
           onClick={onPrev}
           disabled={currentIndex === 0}
-          className="flex items-center gap-1 px-3.5 py-2.5 rounded-xl bg-gym-cardLighter border border-gym-border text-xs font-bold text-gray-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all select-none"
+          className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-gym-cardLighter border border-gym-border text-xs font-bold text-gray-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all select-none"
         >
           <ChevronLeft className="w-4 h-4" />
           Anterior
@@ -112,7 +112,7 @@ export const SwipeableDeck: React.FC<SwipeableDeckProps> = ({
           type="button"
           onClick={onNext}
           disabled={currentIndex >= cards.length - 1}
-          className="flex items-center gap-1 px-3.5 py-2.5 rounded-xl bg-gym-cardLighter border border-gym-border text-xs font-bold text-gray-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all select-none"
+          className="flex items-center gap-1 px-3.5 py-2 rounded-xl bg-gym-cardLighter border border-gym-border text-xs font-bold text-gray-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none active:scale-95 transition-all select-none"
         >
           Siguiente
           <ChevronRight className="w-4 h-4" />

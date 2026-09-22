@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useActiveWorkoutStore } from '../../store/useActiveWorkoutStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -90,9 +90,9 @@ export const ActiveWorkoutPage: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-gym-bg flex flex-col justify-between overflow-hidden">
-      {/* 1. Header Minimalista de Entrenamiento Activo */}
-      <header className="px-4 py-3 bg-gym-bg/95 border-b border-gym-border/40 flex items-center justify-between z-10">
+    <div className="fixed inset-0 z-50 bg-gym-bg flex flex-col overflow-y-auto overflow-x-hidden">
+      {/* 1. Header Minimalista de Entrenamiento Activo (Fijo arriba) */}
+      <header className="sticky top-0 z-30 px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gym-bg/95 backdrop-blur-md border-b border-gym-border/40 flex items-center justify-between flex-shrink-0">
         <button
           type="button"
           onClick={() => setIsCancelConfirmOpen(true)}
@@ -104,7 +104,7 @@ export const ActiveWorkoutPage: React.FC = () => {
 
         {/* Info y Cronómetro de Sesión */}
         <div className="text-center">
-          <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
+          <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider block truncate max-w-[200px] sm:max-w-none">
             {routineName} · {dayName}
           </span>
           <div className="flex items-center justify-center gap-1.5 text-emerald-400 font-mono text-sm font-black mt-0.5">
@@ -125,8 +125,8 @@ export const ActiveWorkoutPage: React.FC = () => {
         </Button>
       </header>
 
-      {/* 2. Área Central: Mazo de Tarjetas Deslizables */}
-      <main className="flex-1 w-full max-w-md mx-auto p-4 flex flex-col justify-between overflow-hidden">
+      {/* 2. Área Central: Mazo de Tarjetas Deslizables con flujo vertical nativo */}
+      <main className="flex-1 w-full max-w-md mx-auto px-3 py-2 sm:px-4 sm:py-3 flex flex-col">
         {cards.length > 0 && (
           <SwipeableDeck
             cards={cards}
