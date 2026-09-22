@@ -18,19 +18,7 @@ export interface AIGeneratedRoutine {
 }
 
 export const getGeminiApiKey = (): string => {
-  return (
-    import.meta.env.VITE_GEMINI_API_KEY ||
-    localStorage.getItem('routinup_gemini_api_key') ||
-    ''
-  );
-};
-
-export const setStoredGeminiApiKey = (key: string): void => {
-  if (key.trim()) {
-    localStorage.setItem('routinup_gemini_api_key', key.trim());
-  } else {
-    localStorage.removeItem('routinup_gemini_api_key');
-  }
+  return import.meta.env.VITE_GEMINI_API_KEY || '';
 };
 
 const SYSTEM_INSTRUCTION = `Eres un entrenador personal y preparador físico de élite. Tu tarea es convertir el texto o descripción de entrenamiento del usuario (en lenguaje natural, notas desordenadas o rutinas completas) en una rutina estructurada de ejercicios.
@@ -67,7 +55,7 @@ export const geminiService = {
     const apiKey = getGeminiApiKey();
     if (!apiKey) {
       throw new Error(
-        'Falta configurar la API Key de Google Gemini. Por favor proporciona una clave válida o configúrala en VITE_GEMINI_API_KEY.'
+        'El servicio de generación con IA no está disponible temporalmente. Por favor, crea tu rutina manualmente.'
       );
     }
 
@@ -150,12 +138,11 @@ export const geminiService = {
       } catch (err: any) {
         lastError = err;
         console.warn(`Error llamando a Gemini con modelo ${modelName}:`, err);
-        // Si es un error de autenticación (clave inválida), no tiene sentido probar otro modelo
         if (
           err?.status === 400 &&
           (err?.message?.includes('API_KEY_INVALID') || err?.message?.includes('API key'))
         ) {
-          throw new Error('La API Key de Gemini ingresada es inválida.');
+          throw new Error('La clave configurada en el servidor es inválida.');
         }
       }
     }

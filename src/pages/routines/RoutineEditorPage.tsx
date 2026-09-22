@@ -14,11 +14,7 @@ import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import { ExerciseImage } from '../../components/common/ExerciseImage';
 import { FlexibleNumericInput } from '../../components/common/FlexibleNumericInput';
-import {
-  geminiService,
-  getGeminiApiKey,
-  setStoredGeminiApiKey,
-} from '../../services/gemini.service';
+import { geminiService } from '../../services/gemini.service';
 import {
   Plus,
   Trash2,
@@ -35,7 +31,6 @@ import {
   ChevronUp,
   Sparkles,
   PenLine,
-  Key,
   AlertCircle,
   CheckCircle2,
   HelpCircle,
@@ -141,10 +136,6 @@ export const RoutineEditorPage: React.FC = () => {
   const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [aiSuccessMessage, setAiSuccessMessage] = useState<string | null>(null);
-
-  // Gestión de API Key de Gemini en memoria / storage
-  const [apiKeyInput, setApiKeyInput] = useState(getGeminiApiKey());
-  const [showApiKeySettings, setShowApiKeySettings] = useState(!geminiService.isConfigured());
 
   const [routineName, setRoutineName] = useState('');
   const [description, setDescription] = useState('');
@@ -508,12 +499,12 @@ export const RoutineEditorPage: React.FC = () => {
   };
 
   // --- GENERACIÓN CON IA (GEMINI) ---
-  const handleSaveApiKey = () => {
-    setStoredGeminiApiKey(apiKeyInput);
-    setShowApiKeySettings(false);
-  };
-
   const handleGenerateRoutineWithAI = async () => {
+    if (!geminiService.isConfigured()) {
+      setAiError('El servicio de generación con IA no está disponible temporalmente.');
+      return;
+    }
+
     if (!aiPrompt.trim()) {
       setAiError('Por favor escribe o pega una descripción de tu rutina.');
       return;
@@ -831,76 +822,40 @@ export const RoutineEditorPage: React.FC = () => {
               />
             </div>
 
+            {/* Aviso si la IA no está disponible */}
+            {!geminiService.isConfigured() && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-300">
+                <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p>
+                  El servicio de generación con IA no está disponible temporalmente. Puedes utilizar la opción{' '}
+                  <button
+                    type="button"
+                    onClick={() => setCreationMode('manual')}
+                    className="underline font-bold text-amber-200 hover:text-white"
+                  >
+                    Crear manualmente
+                  </button>{' '}
+                  para armar tu rutina.
+                </p>
+              </div>
+            )}
+
             {/* Error banner si hubo fallo */}
             {aiError && (
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-xs text-red-300">
                 <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-semibold">{aiError}</p>
-                  {!geminiService.isConfigured() && (
-                    <button
-                      type="button"
-                      onClick={() => setShowApiKeySettings(true)}
-                      className="text-emerald-400 font-bold hover:underline block"
-                    >
-                      Configurar API Key de Gemini ahora →
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Configuración rápida de API Key si no está en variables de entorno */}
-            {showApiKeySettings && (
-              <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-gym-border/80 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                    <Key className="w-3.5 h-3.5 text-emerald-400" />
-                    Configurar API Key de Google Gemini
-                  </span>
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] text-emerald-400 hover:underline font-semibold"
-                  >
-                    Obtener clave gratis ↗
-                  </a>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    placeholder="AIzaSy..."
-                    value={apiKeyInput}
-                    onChange={(e) => setApiKeyInput(e.target.value)}
-                    className="flex-1 px-3 py-1.5 bg-slate-950 border border-gym-border rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
-                  />
-                  <Button size="sm" variant="secondary" onClick={handleSaveApiKey}>
-                    Guardar
-                  </Button>
-                </div>
+                <p className="font-semibold">{aiError}</p>
               </div>
             )}
 
             {/* Botón de acción */}
-            <div className="flex items-center justify-between pt-1">
-              <button
-                type="button"
-                onClick={() => setShowApiKeySettings(!showApiKeySettings)}
-                className="text-[11px] text-gray-400 hover:text-emerald-400 flex items-center gap-1 font-semibold transition-colors"
-              >
-                <Key className="w-3 h-3" />
-                {geminiService.isConfigured()
-                  ? 'API Key conectada (cambiar)'
-                  : 'Configurar API Key'}
-              </button>
-
+            <div className="flex items-center justify-end pt-1">
               <Button
                 size="md"
                 variant="primary"
                 onClick={handleGenerateRoutineWithAI}
                 isLoading={isGeneratingWithAI}
-                disabled={!aiPrompt.trim()}
+                disabled={!aiPrompt.trim() || !geminiService.isConfigured()}
                 icon={<Sparkles className="w-4 h-4" />}
               >
                 {isGeneratingWithAI ? 'Generando con Gemini...' : 'GENERAR RUTINA'}
