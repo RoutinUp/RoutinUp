@@ -68,45 +68,86 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
 
     let rawText = '';
 
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: promptText,
-      });
+    const callModel = async (modelName: string): Promise<string> => {
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: promptText,
+        });
 
-      rawText = response.text || '';
-    } catch (err: any) {
-      console.warn('Llamada con SDK @google/genai falló, intentando con endpoint directo:', err);
+        if (response.text) return response.text;
+      } catch (err: any) {
+        console.warn(`Llamada con SDK para ${modelName} falló, intentando fetch directo:`, err);
 
-      // Endpoint directo con fetch como respaldo
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }],
-        }),
-      });
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+          }),
+        });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        const detailedMsg =
-          errorData?.error?.message ||
-          errorData?.message ||
-          err?.message ||
-          res.statusText ||
-          'Error al comunicarse con la API de Google Gemini.';
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          const status = res.status;
+          const detailedMsg =
+            errorData?.error?.message ||
+            errorData?.message ||
+            err?.message ||
+            res.statusText ||
+            'Error al comunicarse con la API de Google Gemini.';
 
-        throw new Error(detailedMsg);
+          const error: any = new Error(detailedMsg);
+          error.status = status;
+          throw error;
+        }
+
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
       }
 
-      const data = await res.json();
-      rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      throw new Error(`No se recibió contenido para el modelo ${modelName}`);
+    };
+
+    // Modelos a intentar en orden de preferencia (gemini-1.5-flash-8b como principal para evitar saturación)
+    const modelsToTry = ['gemini-1.5-flash-8b', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+    let lastError: any = null;
+
+    for (const model of modelsToTry) {
+      try {
+        rawText = await callModel(model);
+        if (rawText) break;
+      } catch (err: any) {
+        lastError = err;
+        const msg = String(err?.message || '').toLowerCase();
+        const status = err?.status;
+        const isOverloadedOrRateLimited =
+          status === 503 ||
+          status === 429 ||
+          msg.includes('503') ||
+          msg.includes('429') ||
+          msg.includes('high demand') ||
+          msg.includes('resource_exhausted') ||
+          msg.includes('overloaded');
+
+        if (isOverloadedOrRateLimited) {
+          console.warn(`Modelo ${model} saturado o con límite temporal, intentando siguiente modelo...`);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          continue;
+        }
+
+        // Si es otro error (por ejemplo clave no autorizada), no reintentar
+        if (msg.includes('api_key_invalid') || msg.includes('api key')) {
+          throw err;
+        }
+      }
     }
 
     if (!rawText) {
-      throw new Error('No se recibió contenido en la respuesta de Gemini.');
+      throw lastError || new Error('No se recibió contenido en la respuesta de Gemini.');
     }
 
     const cleanedText = rawText
