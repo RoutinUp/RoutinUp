@@ -71,7 +71,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
     try {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-1.5-flash',
         contents: promptText,
       });
 
@@ -79,15 +79,8 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
     } catch (err: any) {
       console.warn('Llamada con SDK @google/genai falló, intentando con endpoint directo:', err);
 
-      if (
-        err?.status === 400 &&
-        (err?.message?.includes('API_KEY_INVALID') || err?.message?.includes('API key'))
-      ) {
-        throw new Error('La clave configurada en el servidor es inválida.');
-      }
-
       // Endpoint directo con fetch como respaldo
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,11 +91,14 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        const msg = errorData?.error?.message || res.statusText;
-        if (res.status === 400 && msg.includes('API_KEY_INVALID')) {
-          throw new Error('La clave configurada en el servidor es inválida.');
-        }
-        throw new Error(msg || 'Error al comunicarse con la API de Google Gemini.');
+        const detailedMsg =
+          errorData?.error?.message ||
+          errorData?.message ||
+          err?.message ||
+          res.statusText ||
+          'Error al comunicarse con la API de Google Gemini.';
+
+        throw new Error(detailedMsg);
       }
 
       const data = await res.json();
