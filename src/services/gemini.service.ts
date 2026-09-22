@@ -71,7 +71,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
     try {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: promptText,
       });
 
@@ -87,7 +87,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
       }
 
       // Endpoint directo con fetch como respaldo
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
