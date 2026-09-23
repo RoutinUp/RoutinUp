@@ -531,7 +531,12 @@ export const RoutineEditorPage: React.FC = () => {
       const customMap: Record<string, boolean> = {};
       let totalExercisesCount = 0;
 
-      const createdDays: WorkoutDay[] = generated.routine.map((aiDay, dayIdx) => {
+      const daysSource =
+        generated.days && generated.days.length > 0
+          ? generated.days
+          : generated.routine || [];
+
+      const createdDays: WorkoutDay[] = daysSource.map((aiDay, dayIdx) => {
         const dayId = 'day-' + Math.random().toString(36).substring(2, 9);
         const dayName = aiDay.dayName || `Día ${dayIdx + 1}: Entrenamiento`;
 

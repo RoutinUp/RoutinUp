@@ -19,6 +19,7 @@ export interface AIGeneratedDay {
 
 export interface AIGeneratedRoutine {
   nombre: string;
+  days: AIGeneratedDay[];
   routine: AIGeneratedDay[];
 }
 
@@ -28,15 +29,17 @@ export const getGeminiApiKey = (): string => {
 
 const SYSTEM_INSTRUCTION = `Eres un entrenador personal y preparador físico de élite. Tu tarea es convertir el texto o descripción de entrenamiento del usuario (en lenguaje natural, notas o rutinas completas de uno o varios días) en una rutina estructurada de ejercicios dividida por días.
 
-INSTRUCCIÓN CLAVE PARA DETECCIÓN DE DÍAS:
-Detecta cuidadosamente si el texto contiene divisiones o encabezados de días como "Día 1", "Día 2", "Día 3", "Día 4", "Día A", "Día B", "Lunes", "Martes", "Miércoles", "Torso", "Pierna", "Push", "Pull", "Legs", etc., o saltos de sección principales.
-Cada bloque de día detectado DEBE ser un elemento separado en el arreglo "routine" con su correspondiente "dayName" (ej: "Día 1: Torso A", "Día 2: Piernas A", "Día 3: Pecho y Bíceps").
-Si el texto describe solo una sesión o no menciona división de días, devuelve un único elemento en "routine" con dayName "Día 1: Entrenamiento".
+INSTRUCCIÓN CRÍTICA DE DÍAS (ESTRICTAMENTE OBLIGATORIA):
+1. Detecta cuidadosamente todas las divisiones de días en el texto (por ejemplo: "Día 1", "Día 2", "Día 3", "Día 4", "Día A", "Día B", "Lunes", "Martes", "Miércoles", "Torso", "Piernas", "Push", "Pull", "Legs", saltos de línea principales, etc.).
+2. DEBES devolver obligatoriamente un arreglo llamado "days" donde cada elemento sea un día independiente con su propio "dayName" (ej: "Día 1: Torso A", "Día 2: Piernas A", "Día 3: Pecho y Bíceps") y su lista "exercises".
+3. NUNCA mezcles todos los ejercicios en un solo día si el usuario describió o mencionó varios días.
+4. Si el texto describe 3 días, el arreglo "days" DEBE tener 3 objetos; si describe 4 días, DEBE tener 4 objetos.
+5. Solo si el texto describe explícitamente una sola sesión sin mención de otros días, el arreglo "days" contendrá 1 solo día (ej: "Día 1: Entrenamiento General").
 
 Debes responder ÚNICAMENTE con un JSON válido con el siguiente formato exacto:
 {
-  "nombre": "Nombre representativo de la rutina",
-  "routine": [
+  "nombre": "Nombre de la rutina (ej. Rutina Torso Pierna 4 Días)",
+  "days": [
     {
       "dayName": "Día 1: Torso A",
       "exercises": [
@@ -46,6 +49,13 @@ Debes responder ÚNICAMENTE con un JSON válido con el siguiente formato exacto:
           "series": [
             { "reps": 10, "peso": 80 },
             { "reps": 8, "peso": 85 }
+          ]
+        },
+        {
+          "nombre": "Remo con barra",
+          "grupoMuscular": "Espalda",
+          "series": [
+            { "reps": 8, "peso": 70 }
           ]
         }
       ]
@@ -67,7 +77,7 @@ Debes responder ÚNICAMENTE con un JSON válido con el siguiente formato exacto:
 
 Reglas estrictas:
 1. "grupoMuscular" DEBE ser exactamente uno de los siguientes: "Pecho", "Espalda", "Piernas", "Hombros", "Bíceps", "Tríceps", "Core", "Cardio", o "Cuerpo Completo".
-2. Cada día en "routine" debe tener su "dayName" descriptivo y su lista de "exercises".
+2. Cada día en "days" debe tener su "dayName" descriptivo y su lista de "exercises".
 3. Cada ejercicio debe tener al menos una serie. Si el usuario escribe "4x10 con 50kg", genera 4 objetos en "series", cada uno con reps: 10 y peso: 50.
 4. Si el usuario no especificó peso (ej. flexiones, dominadas, sentadillas al aire), coloca peso: 0.
 5. Si el usuario no especificó repeticiones, asigna 10 reps por defecto.
@@ -89,10 +99,13 @@ export const geminiService = {
 
     const promptText = `${SYSTEM_INSTRUCTION}
 
-Texto del usuario:
-"${userPrompt.trim()}"
+Texto del usuario para convertir:
+"""
+${userPrompt.trim()}
+"""
 
-IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especificado, sin ningún texto antes ni después.`;
+RECUERDA: La estructura de respuesta DEBE tener la propiedad "days" con cada día separado en el arreglo:
+{ "nombre": "...", "days": [{ "dayName": "Día 1: ...", "exercises": [...] }, { "dayName": "Día 2: ...", "exercises": [...] }] }`;
 
     let rawText = '';
 
@@ -185,16 +198,105 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
 
     const parsedRaw: any = JSON.parse(jsonStr);
 
-    // Normalizar días (soporta tanto "routine", "dias", "days" o lista plana de "ejercicios")
-    const rawDays = parsedRaw.routine || parsedRaw.dias || parsedRaw.days || [];
+    // Normalizar días (soporta tanto "days", "routine", "dias", "workoutDays" o lista plana)
+    const rawDays =
+      parsedRaw.days ||
+      parsedRaw.routine ||
+      parsedRaw.dias ||
+      parsedRaw.workoutDays ||
+      (Array.isArray(parsedRaw) ? parsedRaw : []);
     let normalizedDays: AIGeneratedDay[] = [];
 
     if (Array.isArray(rawDays) && rawDays.length > 0) {
-      normalizedDays = rawDays.map((d: any, idx: number) => {
-        const dayName = d.dayName || d.nombre || d.name || d.nombreDia || `Día ${idx + 1}`;
-        const rawExercises = d.exercises || d.ejercicios || [];
-        const exercises: AIGeneratedExercise[] = Array.isArray(rawExercises)
-          ? rawExercises.map((ex: any) => ({
+      // Comprobar si los elementos son objetos de día (contienen exercises/ejercicios o dayName)
+      const firstItem = rawDays[0];
+      const isDayObject =
+        firstItem &&
+        (Array.isArray(firstItem.exercises) ||
+          Array.isArray(firstItem.ejercicios) ||
+          firstItem.dayName ||
+          firstItem.nombreDia);
+
+      if (isDayObject) {
+        normalizedDays = rawDays.map((d: any, idx: number) => {
+          const dayName = d.dayName || d.nombre || d.name || d.nombreDia || `Día ${idx + 1}`;
+          const rawExercises = d.exercises || d.ejercicios || [];
+          const exercises: AIGeneratedExercise[] = Array.isArray(rawExercises)
+            ? rawExercises.map((ex: any) => ({
+                nombre: ex.nombre || ex.name || 'Ejercicio',
+                grupoMuscular: ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo',
+                series: Array.isArray(ex.series || ex.sets)
+                  ? (ex.series || ex.sets).map((s: any) => ({
+                      reps: Number(s.reps || s.repeticiones || 10),
+                      peso: Number(s.peso || s.weight || 0),
+                    }))
+                  : [{ reps: 10, peso: 0 }],
+              }))
+            : [];
+
+          return {
+            dayName,
+            exercises,
+          };
+        });
+      } else {
+        // Es un arreglo de ejercicios planos: agrupar por propiedad de día si existe
+        const dayMap = new Map<string, AIGeneratedExercise[]>();
+        rawDays.forEach((ex: any, idx: number) => {
+          const dayKey = ex.dia || ex.day || ex.dayName || 'Día 1: Entrenamiento';
+          if (!dayMap.has(dayKey)) {
+            dayMap.set(dayKey, []);
+          }
+          dayMap.get(dayKey)!.push({
+            nombre: ex.nombre || ex.name || `Ejercicio ${idx + 1}`,
+            grupoMuscular: ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo',
+            series: Array.isArray(ex.series || ex.sets)
+              ? (ex.series || ex.sets).map((s: any) => ({
+                  reps: Number(s.reps || s.repeticiones || 10),
+                  peso: Number(s.peso || s.weight || 0),
+                }))
+              : [{ reps: 10, peso: 0 }],
+          });
+        });
+
+        normalizedDays = Array.from(dayMap.entries()).map(([dayName, exercises]) => ({
+          dayName,
+          exercises,
+        }));
+      }
+    } else if (Array.isArray(parsedRaw.ejercicios || parsedRaw.exercises)) {
+      // Fallback si devolvió una lista plana de ejercicios sin agrupar por días
+      const rawExercises = parsedRaw.ejercicios || parsedRaw.exercises;
+      const hasDayProperty = rawExercises.some((ex: any) => ex.dia || ex.day || ex.dayName);
+
+      if (hasDayProperty) {
+        const dayMap = new Map<string, AIGeneratedExercise[]>();
+        rawExercises.forEach((ex: any, idx: number) => {
+          const dayKey = ex.dia || ex.day || ex.dayName || 'Día 1: Entrenamiento';
+          if (!dayMap.has(dayKey)) {
+            dayMap.set(dayKey, []);
+          }
+          dayMap.get(dayKey)!.push({
+            nombre: ex.nombre || ex.name || `Ejercicio ${idx + 1}`,
+            grupoMuscular: ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo',
+            series: Array.isArray(ex.series || ex.sets)
+              ? (ex.series || ex.sets).map((s: any) => ({
+                  reps: Number(s.reps || s.repeticiones || 10),
+                  peso: Number(s.peso || s.weight || 0),
+                }))
+              : [{ reps: 10, peso: 0 }],
+          });
+        });
+
+        normalizedDays = Array.from(dayMap.entries()).map(([dayName, exercises]) => ({
+          dayName,
+          exercises,
+        }));
+      } else {
+        normalizedDays = [
+          {
+            dayName: 'Día 1: Entrenamiento',
+            exercises: rawExercises.map((ex: any) => ({
               nombre: ex.nombre || ex.name || 'Ejercicio',
               grupoMuscular: ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo',
               series: Array.isArray(ex.series || ex.sets)
@@ -203,32 +305,10 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
                     peso: Number(s.peso || s.weight || 0),
                   }))
                 : [{ reps: 10, peso: 0 }],
-            }))
-          : [];
-
-        return {
-          dayName,
-          exercises,
-        };
-      });
-    } else if (Array.isArray(parsedRaw.ejercicios || parsedRaw.exercises)) {
-      // Fallback si devolvió una lista plana de ejercicios sin agrupar por días
-      const rawExercises = parsedRaw.ejercicios || parsedRaw.exercises;
-      normalizedDays = [
-        {
-          dayName: 'Día 1: Entrenamiento',
-          exercises: rawExercises.map((ex: any) => ({
-            nombre: ex.nombre || ex.name || 'Ejercicio',
-            grupoMuscular: ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo',
-            series: Array.isArray(ex.series || ex.sets)
-              ? (ex.series || ex.sets).map((s: any) => ({
-                  reps: Number(s.reps || s.repeticiones || 10),
-                  peso: Number(s.peso || s.weight || 0),
-                }))
-              : [{ reps: 10, peso: 0 }],
-          })),
-        },
-      ];
+            })),
+          },
+        ];
+      }
     }
 
     if (normalizedDays.length === 0) {
@@ -237,6 +317,7 @@ IMPORTANTE: Responde ÚNICAMENTE con el objeto JSON según el esquema especifica
 
     const parsed: AIGeneratedRoutine = {
       nombre: parsedRaw.nombre || parsedRaw.name || 'Rutina Generada con IA',
+      days: normalizedDays,
       routine: normalizedDays,
     };
 
