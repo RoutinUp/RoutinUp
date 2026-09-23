@@ -62,9 +62,11 @@ export const QuickNumberStepper: React.FC<QuickNumberStepperProps> = ({
           <Minus className="w-5 h-5 stroke-[2.5]" />
         </button>
 
-        <div className="flex-1 text-center">
+        <div className="flex-1 text-center min-w-0">
           <input
             type="number"
+            inputMode={label.toLowerCase().includes('peso') ? 'decimal' : 'numeric'}
+            step={step}
             value={localText}
             onChange={(e) => {
               setLocalText(e.target.value);
@@ -83,7 +85,8 @@ export const QuickNumberStepper: React.FC<QuickNumberStepperProps> = ({
               setLocalText(parsed.toString());
               onChange(parsed);
             }}
-            className="w-full text-center text-2xl font-black bg-transparent text-white focus:outline-none"
+            onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
+            className="w-full min-h-[44px] px-2 py-2 text-center text-[16px] sm:text-xl md:text-2xl font-black bg-slate-900/90 border border-gym-border/90 focus:border-emerald-500 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/50 [appearance:none] [-webkit-appearance:none] transition-colors touch-manipulation"
           />
         </div>
 

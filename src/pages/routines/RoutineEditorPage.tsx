@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { routineService } from '../../services/routine.service';
 import { exerciseService } from '../../services/exercise.service';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -170,13 +170,16 @@ const hasVariedSets = (ex: WorkoutDayExercise): boolean => {
 export const RoutineEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
 
   const isEditing = Boolean(id && id !== 'new');
   const isInitializedRef = useRef(false);
 
   // Modo de creación: 'manual' o 'ai' (SOLO disponible al crear una rutina nueva)
-  const [creationMode, setCreationMode] = useState<'manual' | 'ai'>('manual');
+  const [creationMode, setCreationMode] = useState<'manual' | 'ai'>(() => {
+    return searchParams.get('mode') === 'ai' ? 'ai' : 'manual';
+  });
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);

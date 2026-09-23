@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -24,6 +24,23 @@
   input, textarea {
     user-select: text;
     -webkit-user-select: text;
+  }
+
+  /* Compatibilidad y accesibilidad táctil para inputs numéricos en Android e iOS */
+  input[type="number"],
+  input[inputmode="numeric"],
+  input[inputmode="decimal"] {
+    min-height: 44px;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }
 

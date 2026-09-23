@@ -7,9 +7,10 @@ import { useActiveWorkoutStore } from '../../store/useActiveWorkoutStore';
 import { WorkoutRoutine, WorkoutDay } from '../../types/routine';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
-import { Plus, Play, Calendar, Trash2, Edit3, ChevronDown, ChevronUp, Dumbbell } from 'lucide-react';
+import { Plus, Play, Calendar, Trash2, Edit3, ChevronDown, ChevronUp, Dumbbell, Star } from 'lucide-react';
+import { CreateRoutineOptionsModal } from '../../components/routines/CreateRoutineOptionsModal';
 
-const PRESET_OPTIONS = [
+export const PRESET_OPTIONS = [
   {
     index: 0,
     title: 'Push / Pull / Legs (PPL - 3 Días)',
@@ -44,6 +45,7 @@ export const RoutinesListPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [importingIndex, setImportingIndex] = useState<number | null>(null);
 
   const loadRoutines = async () => {
@@ -73,6 +75,22 @@ export const RoutinesListPage: React.FC = () => {
     navigate('/workout/active');
   };
 
+  const handleToggleActive = async (routineId: string) => {
+    // Actualización optimista inmediata en la UI
+    setRoutines((prev) =>
+      prev.map((r) => ({
+        ...r,
+        isActive: r.id === routineId,
+      }))
+    );
+    try {
+      await routineService.setActiveRoutine(routineId, user?.id);
+    } catch (err) {
+      console.error('Error al cambiar rutina activa:', err);
+      await loadRoutines();
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteRoutineId) return;
     const targetId = deleteRoutineId;
@@ -94,7 +112,7 @@ export const RoutinesListPage: React.FC = () => {
     try {
       setImportingIndex(index);
       const newRoutine = await routineService.importPresetByIndex(index, user?.id);
-      setRoutines([newRoutine]);
+      await loadRoutines();
       setExpandedRoutineId(newRoutine.id);
       setIsTemplateModalOpen(false);
     } catch (err) {
@@ -111,11 +129,14 @@ export const RoutinesListPage: React.FC = () => {
           <h1 className="text-2xl font-black text-white tracking-tight">Mis Rutinas</h1>
           <p className="text-xs text-gray-400">Planifica tus sesiones de entrenamiento</p>
         </div>
-        <Link to="/routines/new">
-          <Button size="sm" variant="primary" icon={<Plus className="w-4 h-4 stroke-[3]" />}>
-            Crear
-          </Button>
-        </Link>
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={() => setIsCreateModalOpen(true)}
+          icon={<Plus className="w-4 h-4 stroke-[3]" />}
+        >
+          Crear
+        </Button>
       </div>
 
       {isLoading ? (
@@ -138,11 +159,15 @@ export const RoutinesListPage: React.FC = () => {
           </div>
 
           <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center max-w-sm mx-auto">
-            <Link to="/routines/new" className="w-full">
-              <Button size="lg" fullWidth variant="primary" icon={<Plus className="w-5 h-5 stroke-[2.5]" />}>
-                CREAR NUEVA RUTINA
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              fullWidth
+              variant="primary"
+              onClick={() => setIsCreateModalOpen(true)}
+              icon={<Plus className="w-5 h-5 stroke-[2.5]" />}
+            >
+              CREAR NUEVA RUTINA
+            </Button>
             <Button
               size="lg"
               fullWidth
@@ -172,7 +197,15 @@ export const RoutinesListPage: React.FC = () => {
                       <Dumbbell className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="text-base font-black text-white">{routine.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-black text-white">{routine.name}</h3>
+                        {routine.isActive && (
+                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            Activa
+                          </span>
+                        )}
+                      </div>
                       <span className="text-xs text-gray-400">
                         {routine.days.length} {routine.days.length === 1 ? 'día' : 'días'} de entrenamiento
                       </span>
@@ -180,6 +213,21 @@ export const RoutinesListPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleActive(routine.id);
+                      }}
+                      className={`p-2 rounded-xl transition-all ${
+                        routine.isActive
+                          ? 'text-amber-400 bg-amber-500/15 border border-amber-500/30 shadow-sm'
+                          : 'text-gray-500 hover:text-amber-400 hover:bg-slate-800'
+                      }`}
+                      title={routine.isActive ? 'Rutina activa actualmente' : 'Marcar como rutina activa'}
+                    >
+                      <Star className={`w-4 h-4 ${routine.isActive ? 'fill-amber-400 text-amber-400' : ''}`} />
+                    </button>
                     <Link
                       to={`/routines/${routine.id}/edit`}
                       onClick={(e) => e.stopPropagation()}
@@ -326,6 +374,15 @@ export const RoutinesListPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Modal Opciones de Creación de Rutina */}
+      <CreateRoutineOptionsModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSelectCreateBlank={() => navigate('/routines/new')}
+        onSelectGenerateAI={() => navigate('/routines/new?mode=ai')}
+        onSelectTemplate={() => setIsTemplateModalOpen(true)}
+      />
     </div>
   );
 };

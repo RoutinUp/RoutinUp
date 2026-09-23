@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../config/supabase';
 import { WorkoutRoutine } from '../types/routine';
 import { exerciseService } from './exercise.service';
+import { SEED_EXERCISES } from '../data/seedExercises';
 
 const getUserRoutinesKey = (userId?: string) => `gymtrack_user_routines_${userId || 'anonymous'}`;
 
@@ -680,7 +681,7 @@ export const routineService = {
                   id: e.id,
                   workoutDayId: d.id,
                   exerciseId: e.exercise_id,
-                  exercise: exerciseMap.get(e.exercise_id),
+                  exercise: exerciseMap.get(e.exercise_id) || SEED_EXERCISES.find((s) => s.id === e.exercise_id || s.slug === e.exercise_id),
                   exerciseOrder: e.exercise_order,
                   targetSets: setsConfig.length || e.target_sets || 3,
                   targetRepsMin: e.target_reps_min,
@@ -712,6 +713,32 @@ export const routineService = {
   // Guardar (crear o actualizar) una rutina completa
   async saveRoutine(routine: WorkoutRoutine, userId?: string): Promise<WorkoutRoutine> {
     if (!userId) throw new Error('Usuario no autenticado para guardar la rutina');
+
+    // Si la rutina que se guarda está marcada como activa, desmarcar cualquier otra primero
+    if (routine.isActive) {
+      const userKey = getUserRoutinesKey(userId);
+      const stored = localStorage.getItem(userKey);
+      if (stored) {
+        try {
+          const list: WorkoutRoutine[] = JSON.parse(stored);
+          const updated = list.map((r) => (r.id !== routine.id ? { ...r, isActive: false } : r));
+          localStorage.setItem(userKey, JSON.stringify(updated));
+        } catch (e) {
+          console.warn('Error clearing active routines in cache:', e);
+        }
+      }
+
+      if (isSupabaseConfigured) {
+        try {
+          await supabase
+            .from('workout_routines')
+            .update({ is_active: false })
+            .eq('user_id', userId);
+        } catch (e) {
+          console.warn('Error clearing active routines in Supabase:', e);
+        }
+      }
+    }
 
     if (!isSupabaseConfigured) {
       const userKey = getUserRoutinesKey(userId);
@@ -747,6 +774,11 @@ export const routineService = {
 
     const realRoutineId = routineData.id;
 
+    // Obtener catálogo completo de ejercicios de Supabase para mapear IDs
+    const dbExercises = await exerciseService.getExercises(userId);
+    const isUuid = (val?: string) =>
+      Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
     // Guardar Días y ejercicios
     for (let dayIdx = 0; dayIdx < routine.days.length; dayIdx++) {
       const day = routine.days[dayIdx];
@@ -763,31 +795,102 @@ export const routineService = {
         .single();
 
       if (dayData) {
+        day.id = dayData.id;
         for (let exIdx = 0; exIdx < day.exercises.length; exIdx++) {
           const ex = day.exercises[exIdx];
           const isExNew = ex.id.startsWith('d-ex-');
+
+          // Resolver UUID de Supabase para el ejercicio
+          const seedInfo = SEED_EXERCISES.find(
+            (s) => s.id === ex.exerciseId || s.slug === ex.exerciseId
+          );
+
+          let resolvedExerciseId: string | null = isUuid(ex.exerciseId) ? ex.exerciseId : null;
+
+          if (!resolvedExerciseId) {
+            const matched = dbExercises.find(
+              (d) =>
+                d.id === ex.exerciseId ||
+                (seedInfo && (d.slug === seedInfo.slug || d.name.toLowerCase() === seedInfo.name.toLowerCase()))
+            );
+            if (matched && isUuid(matched.id)) {
+              resolvedExerciseId = matched.id;
+            }
+          }
+
+          // Si el ejercicio no existe aún en la base de datos Supabase, insertarlo para obtener su UUID
+          if (!resolvedExerciseId && seedInfo) {
+            try {
+              const { data: createdEx } = await supabase
+                .from('exercises')
+                .insert({
+                  name: seedInfo.name,
+                  slug: seedInfo.slug,
+                  description: seedInfo.description || '',
+                  main_muscle_group: seedInfo.mainMuscleGroup,
+                  secondary_muscles: seedInfo.secondaryMuscles || [],
+                  equipment: seedInfo.equipment,
+                  exercise_type: seedInfo.exerciseType,
+                  instructions: seedInfo.instructions || [],
+                  technique_tips: seedInfo.techniqueTips || '',
+                  difficulty_level: seedInfo.difficultyLevel,
+                  image_url: seedInfo.imageUrl || '',
+                  is_custom: false,
+                })
+                .select('id')
+                .single();
+
+              if (createdEx?.id) {
+                resolvedExerciseId = createdEx.id;
+                dbExercises.push({
+                  ...seedInfo,
+                  id: createdEx.id,
+                });
+              }
+            } catch (insErr) {
+              console.warn('Error auto-inserting exercise into Supabase:', insErr);
+            }
+          }
+
+          const targetExerciseId = resolvedExerciseId || ex.exerciseId;
+          ex.exerciseId = targetExerciseId;
+          if (seedInfo && !ex.exercise) {
+            ex.exercise = seedInfo;
+          }
+
           const exercisePayload: any = {
             id: isExNew ? undefined : ex.id,
             workout_day_id: dayData.id,
-            exercise_id: ex.exerciseId,
+            exercise_id: targetExerciseId,
             exercise_order: exIdx + 1,
-            target_sets: ex.setsConfig?.length || ex.targetSets,
-            target_reps_min: ex.targetRepsMin,
-            target_reps_max: ex.targetRepsMax,
-            target_weight: ex.targetWeight,
-            rest_seconds: ex.restSeconds,
+            target_sets: ex.setsConfig?.length || ex.targetSets || 3,
+            target_reps_min: ex.targetRepsMin || 8,
+            target_reps_max: ex.targetRepsMax || 12,
+            target_weight: ex.targetWeight || 0,
+            rest_seconds: ex.restSeconds || 90,
             notes: ex.notes || '',
             sets_config: ex.setsConfig || [],
           };
 
-          const { error: exError } = await supabase
+          const { data: savedEx, error: exError } = await supabase
             .from('workout_day_exercises')
-            .upsert(exercisePayload);
+            .upsert(exercisePayload)
+            .select()
+            .single();
+
+          if (savedEx) {
+            ex.id = savedEx.id;
+          }
 
           // Fallback resiliente si la columna sets_config aún no fue ejecutada en Supabase SQL Editor
           if (exError && (exError.message?.includes('sets_config') || (exError as any).code === '42703')) {
             delete exercisePayload.sets_config;
-            await supabase.from('workout_day_exercises').upsert(exercisePayload);
+            const { data: retryEx } = await supabase
+              .from('workout_day_exercises')
+              .upsert(exercisePayload)
+              .select()
+              .single();
+            if (retryEx) ex.id = retryEx.id;
           }
         }
       }
@@ -806,6 +909,45 @@ export const routineService = {
     localStorage.setItem(userKey, JSON.stringify(list));
 
     return { ...routine, id: realRoutineId };
+  },
+
+  // Marcar una rutina como activa exclusivamente (desmarcando todas las demás)
+  async setActiveRoutine(routineId: string, userId?: string): Promise<void> {
+    if (!userId) return;
+
+    // 1. Actualizar siempre la caché local de inmediato
+    const userKey = getUserRoutinesKey(userId);
+    const stored = localStorage.getItem(userKey);
+    if (stored) {
+      try {
+        const list: WorkoutRoutine[] = JSON.parse(stored);
+        const updated = list.map((r) => ({
+          ...r,
+          isActive: r.id === routineId,
+        }));
+        localStorage.setItem(userKey, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Error updating local active routine:', e);
+      }
+    }
+
+    if (!isSupabaseConfigured) return;
+
+    try {
+      // 2. En Supabase: desmarcar todas y marcar únicamente la seleccionada
+      await supabase
+        .from('workout_routines')
+        .update({ is_active: false })
+        .eq('user_id', userId);
+
+      await supabase
+        .from('workout_routines')
+        .update({ is_active: true })
+        .eq('id', routineId)
+        .eq('user_id', userId);
+    } catch (err) {
+      console.warn('Error updating active routine in Supabase:', err);
+    }
   },
 
   // Eliminar una rutina del usuario actual
@@ -845,24 +987,31 @@ export const routineService = {
 
   // Obtener presets predeterminados (para importar si el usuario lo desea)
   getDefaultPresets(userId?: string): WorkoutRoutine[] {
-    return DEFAULT_PRESET_ROUTINES.map((r) => ({
+    const seedMap = new Map(SEED_EXERCISES.map((e) => [e.id, e]));
+
+    return DEFAULT_PRESET_ROUTINES.map((r, rIdx) => ({
       ...r,
       id: 'rot-' + Math.random().toString(36).substring(2, 9),
       userId: userId || 'anonymous',
+      isActive: rIdx === 0,
       days: r.days.map((d) => ({
         ...d,
         id: 'day-' + Math.random().toString(36).substring(2, 9),
-        exercises: d.exercises.map((e) => ({
-          ...e,
-          id: 'd-ex-' + Math.random().toString(36).substring(2, 9),
-          setsConfig: Array.from({ length: e.targetSets }, (_, idx) => ({
-            setNumber: idx + 1,
-            targetReps: e.targetRepsMin,
-            targetRepsMin: e.targetRepsMin,
-            targetRepsMax: e.targetRepsMax,
-            targetWeight: e.targetWeight,
-          })),
-        })),
+        exercises: d.exercises.map((e) => {
+          const fullEx = seedMap.get(e.exerciseId);
+          return {
+            ...e,
+            id: 'd-ex-' + Math.random().toString(36).substring(2, 9),
+            exercise: fullEx,
+            setsConfig: Array.from({ length: e.targetSets || 3 }, (_, idx) => ({
+              setNumber: idx + 1,
+              targetReps: e.targetRepsMin || 10,
+              targetRepsMin: e.targetRepsMin || 8,
+              targetRepsMax: e.targetRepsMax || 12,
+              targetWeight: e.targetWeight || 0,
+            })),
+          };
+        }),
       })),
     }));
   },
@@ -871,7 +1020,17 @@ export const routineService = {
   async importPresetByIndex(index: number, userId?: string): Promise<WorkoutRoutine> {
     const presets = this.getDefaultPresets(userId);
     const selected = presets[index] || presets[0];
-    return await this.saveRoutine(selected, userId);
+
+    // Marcar la rutina como activa al importarla
+    selected.isActive = true;
+
+    const saved = await this.saveRoutine(selected, userId);
+
+    if (userId) {
+      await this.setActiveRoutine(saved.id, userId);
+    }
+
+    return saved;
   },
 
   // Importar y guardar preset predeterminado en la cuenta del usuario
