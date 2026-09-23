@@ -29,6 +29,7 @@ interface ActiveWorkoutState {
   skipRest: () => void;
   skipCurrentExercise: (exerciseId: string, reason?: string) => void;
   tickTimer: () => void;
+  syncDuration: () => void;
   finishWorkout: (userId?: string) => Promise<WorkoutSession>;
   cancelWorkout: () => void;
 }
@@ -82,13 +83,15 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
 
           for (let setNum = 1; setNum <= totalSets; setNum++) {
             const specificSet = dayEx.setsConfig?.find((s) => s.setNumber === setNum);
-            const targetWeight = specificSet !== undefined ? specificSet.targetWeight : (dayEx.targetWeight || 0);
+            const targetWeight = (specificSet !== undefined && specificSet.targetWeight !== undefined)
+              ? specificSet.targetWeight
+              : (dayEx.targetWeight || 0);
             const targetRepsMin = specificSet !== undefined
-              ? (specificSet.targetRepsMin ?? specificSet.targetReps ?? dayEx.targetRepsMin)
-              : dayEx.targetRepsMin;
+              ? (specificSet.targetRepsMin ?? specificSet.targetReps ?? dayEx.targetRepsMin ?? 8)
+              : (dayEx.targetRepsMin ?? 8);
             const targetRepsMax = specificSet !== undefined
-              ? (specificSet.targetRepsMax ?? specificSet.targetReps ?? dayEx.targetRepsMax)
-              : dayEx.targetRepsMax;
+              ? (specificSet.targetRepsMax ?? specificSet.targetReps ?? dayEx.targetRepsMax ?? 10)
+              : (dayEx.targetRepsMax ?? 10);
             const targetReps = targetRepsMax;
 
             // 1. Tarjeta de Serie
@@ -105,7 +108,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
               targetRepsMin,
               targetRepsMax,
               targetWeight,
-              restSeconds: dayEx.restSeconds,
+              restSeconds: dayEx.restSeconds || 90,
               notes: dayEx.notes,
               lastPerformance: lastSet
                 ? {
@@ -122,23 +125,34 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
             flatCards.push(setCard);
 
             // 2. Tarjeta de Descanso (salvo que sea la última serie del último ejercicio)
-            const isLastSetOfLastExercise = exIndex === totalExercises - 1 && setNum === dayEx.targetSets;
+            const isLastSetOfLastExercise = exIndex === totalExercises - 1 && setNum === totalSets;
             if (!isLastSetOfLastExercise) {
-              const isLastSetOfThisExercise = setNum === dayEx.targetSets;
+              const isLastSetOfThisExercise = setNum === totalSets;
               const nextDayEx = isLastSetOfThisExercise ? day.exercises[exIndex + 1] : dayEx;
+              const nextSetNum = isLastSetOfThisExercise ? 1 : setNum + 1;
+              const nextTotalSets = (nextDayEx?.setsConfig && nextDayEx.setsConfig.length > 0)
+                ? nextDayEx.setsConfig.length
+                : (nextDayEx?.targetSets || 3);
+              const nextSpecificSet = nextDayEx?.setsConfig?.find((s) => s.setNumber === nextSetNum);
+              const nextTargetWeight = (nextSpecificSet !== undefined && nextSpecificSet.targetWeight !== undefined)
+                ? nextSpecificSet.targetWeight
+                : (nextDayEx?.targetWeight || 0);
+              const nextRepsMin = nextSpecificSet?.targetRepsMin ?? nextSpecificSet?.targetReps ?? nextDayEx?.targetRepsMin ?? 8;
+              const nextRepsMax = nextSpecificSet?.targetRepsMax ?? nextSpecificSet?.targetReps ?? nextDayEx?.targetRepsMax ?? 10;
+              const nextTargetReps = nextRepsMin === nextRepsMax ? `${nextRepsMin} reps` : `${nextRepsMin}–${nextRepsMax} reps`;
 
               const restCard: RestCardData = {
                 kind: 'rest',
                 cardIndex: flatCards.length,
                 totalCards: 0,
-                durationSeconds: dayEx.restSeconds,
+                durationSeconds: dayEx.restSeconds || 90,
                 currentExerciseName: dayEx.exercise.name,
                 nextExerciseName: nextDayEx?.exercise?.name || 'Próximo Ejercicio',
-                nextSetNumber: isLastSetOfThisExercise ? 1 : setNum + 1,
-                nextTotalSets: nextDayEx?.targetSets || 3,
+                nextSetNumber: nextSetNum,
+                nextTotalSets: nextTotalSets,
                 nextExerciseImage: nextDayEx?.exercise?.imageUrl,
-                nextTargetWeight: nextDayEx?.targetWeight,
-                nextTargetReps: `${nextDayEx?.targetRepsMin || 8}–${nextDayEx?.targetRepsMax || 12}`,
+                nextTargetWeight: nextTargetWeight,
+                nextTargetReps,
               };
               flatCards.push(restCard);
             }
@@ -265,15 +279,40 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
         });
       },
 
+      syncDuration: () => {
+        const { isActive, startedAt } = get();
+        if (isActive && startedAt) {
+          const startMs = new Date(startedAt).getTime();
+          if (!isNaN(startMs) && startMs > 0) {
+            const elapsed = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+            set({ durationSeconds: elapsed });
+          }
+        }
+      },
+
       tickTimer: () => {
-        const { isActive, durationSeconds } = get();
+        const { isActive, startedAt, durationSeconds } = get();
         if (isActive) {
+          if (startedAt) {
+            const startMs = new Date(startedAt).getTime();
+            if (!isNaN(startMs) && startMs > 0) {
+              const elapsed = Math.max(0, Math.floor((Date.now() - startMs) / 1000));
+              set({ durationSeconds: elapsed });
+              return;
+            }
+          }
           set({ durationSeconds: durationSeconds + 1 });
         }
       },
 
       finishWorkout: async (userId) => {
         const { routineName, dayName, workoutDayId, startedAt, durationSeconds, cards } = get();
+
+        // Calcular duración real precisa con Date.now()
+        const startMs = startedAt ? new Date(startedAt).getTime() : 0;
+        const realDurationSeconds = (!isNaN(startMs) && startMs > 0)
+          ? Math.max(1, Math.floor((Date.now() - startMs) / 1000))
+          : Math.max(1, durationSeconds);
 
         // Agrupar sets por ejercicio
         const exercisesMap = new Map<string, LoggedExercise>();
@@ -325,7 +364,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           dayName,
           startedAt: startedAt || new Date().toISOString(),
           completedAt: new Date().toISOString(),
-          durationSeconds,
+          durationSeconds: realDurationSeconds,
           totalVolume: 0,
           totalSetsCompleted: loggedExercises.reduce((acc, e) => acc + e.sets.length, 0),
           exercises: loggedExercises,
@@ -348,6 +387,7 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
         set({
           isActive: false,
           isFinished: true,
+          durationSeconds: realDurationSeconds,
           completedSessionSummary: session,
           newPRsList: newPRs,
         });

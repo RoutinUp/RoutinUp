@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RestCardData } from '../../types/workout';
 import { Button } from '../common/Button';
 import { formatDuration } from '../../utils/formatters';
@@ -17,29 +17,60 @@ export const RestCard: React.FC<RestCardProps> = ({
   onCompleteRest,
 }) => {
   const [timeLeft, setTimeLeft] = useState<number>(card.durationSeconds);
-  const totalTime = card.durationSeconds;
+  const [totalTime, setTotalTime] = useState<number>(card.durationSeconds);
+  const targetEndTimeRef = useRef<number>(Date.now() + card.durationSeconds * 1000);
+  const completedRef = useRef<boolean>(false);
 
-  // Temporizador regresivo
+  // Inicializar o reiniciar al cambiar de tarjeta de descanso
   useEffect(() => {
-    setTimeLeft(card.durationSeconds);
+    completedRef.current = false;
+    const dur = Math.max(1, card.durationSeconds);
+    setTotalTime(dur);
+    targetEndTimeRef.current = Date.now() + dur * 1000;
+    setTimeLeft(dur);
   }, [card.cardIndex, card.durationSeconds]);
 
+  // Temporizador regresivo preciso basado en Date.now() y sincronizado con el ciclo de vida de la pantalla
   useEffect(() => {
-    if (timeLeft <= 0) {
-      audioManager.playRestFinished();
-      onCompleteRest();
-      return;
-    }
+    const checkCountdown = () => {
+      if (completedRef.current) return;
+      const remainingMs = targetEndTimeRef.current - Date.now();
+      const remainingSecs = Math.max(0, Math.ceil(remainingMs / 1000));
+      setTimeLeft(remainingSecs);
 
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
+      if (remainingSecs <= 0 && !completedRef.current) {
+        completedRef.current = true;
+        audioManager.playRestFinished();
+        onCompleteRest();
+      }
+    };
 
-    return () => clearInterval(timer);
-  }, [timeLeft, onCompleteRest]);
+    checkCountdown();
+
+    const timer = setInterval(checkCountdown, 250);
+
+    const handleSync = () => {
+      checkCountdown();
+    };
+
+    document.addEventListener('visibilitychange', handleSync);
+    window.addEventListener('focus', handleSync);
+    window.addEventListener('pageshow', handleSync);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleSync);
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('pageshow', handleSync);
+    };
+  }, [card.cardIndex, onCompleteRest]);
 
   const addTime = (secs: number) => {
-    setTimeLeft((prev) => Math.max(5, prev + secs));
+    targetEndTimeRef.current += secs * 1000;
+    setTotalTime((prev) => Math.max(5, prev + secs));
+    const remainingMs = targetEndTimeRef.current - Date.now();
+    const remainingSecs = Math.max(0, Math.ceil(remainingMs / 1000));
+    setTimeLeft(remainingSecs);
   };
 
   // Cálculo de progreso para barra/círculo

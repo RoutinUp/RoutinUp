@@ -317,7 +317,7 @@ export const workoutService = {
   },
 
   // Obtener puntos de evolución histórica para gráficos de un ejercicio
-  async getExerciseProgressData(exerciseId: string, userId?: string): Promise<ExerciseProgressPoint[]> {
+  async getExerciseProgressData(exerciseId: string, userId?: string, exerciseName?: string): Promise<ExerciseProgressPoint[]> {
     const sessions = await this.getWorkoutSessions(userId);
     const points: ExerciseProgressPoint[] = [];
 
@@ -325,7 +325,15 @@ export const workoutService = {
     const chronological = [...sessions].reverse();
 
     chronological.forEach((s) => {
-      const match = s.exercises.find((e) => e.exerciseId === exerciseId && e.status === 'completed');
+      const match = s.exercises.find((e) => {
+        const idMatches = Boolean(exerciseId && e.exerciseId === exerciseId);
+        const nameMatches = Boolean(
+          exerciseName &&
+          e.exerciseName &&
+          e.exerciseName.toLowerCase().trim() === exerciseName.toLowerCase().trim()
+        );
+        return (idMatches || nameMatches) && (e.status === 'completed' || (e.sets && e.sets.length > 0));
+      });
       if (match && match.sets.length > 0) {
         const completedSets = match.sets.filter((st) => st.reps > 0);
         if (completedSets.length > 0) {

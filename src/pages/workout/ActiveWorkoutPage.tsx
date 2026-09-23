@@ -30,6 +30,7 @@ export const ActiveWorkoutPage: React.FC = () => {
     skipRest,
     skipCurrentExercise,
     tickTimer,
+    syncDuration,
     finishWorkout,
     cancelWorkout,
   } = useActiveWorkoutStore();
@@ -39,14 +40,32 @@ export const ActiveWorkoutPage: React.FC = () => {
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
-  // Tick de cronómetro cada segundo
+  // Sincronización precisa del cronómetro de la rutina (inmune a bloqueo de pantalla o cambio de app)
   useEffect(() => {
     if (!isActive) return;
+
+    // Sincronizar inmediatamente al montar
+    syncDuration();
+
     const interval = setInterval(() => {
-      tickTimer();
+      syncDuration();
     }, 1000);
-    return () => clearInterval(interval);
-  }, [isActive, tickTimer]);
+
+    const handleSync = () => {
+      syncDuration();
+    };
+
+    document.addEventListener('visibilitychange', handleSync);
+    window.addEventListener('focus', handleSync);
+    window.addEventListener('pageshow', handleSync);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleSync);
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('pageshow', handleSync);
+    };
+  }, [isActive, syncDuration]);
 
   // Si no hay entrenamiento activo y no acaba de terminar, volver al home
   useEffect(() => {

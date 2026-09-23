@@ -1,6 +1,7 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { exerciseService } from '../../services/exercise.service';
 import { workoutService } from '../../services/workout.service';
+import { routineService } from '../../services/routine.service';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Exercise } from '../../types/exercise';
 import { ExerciseProgressPoint, PersonalRecord } from '../../types/progress';
@@ -30,17 +31,82 @@ export const ProgressPage: React.FC = () => {
     const initData = async () => {
       try {
         setIsLoading(true);
-        const [exList, prList] = await Promise.all([
+        const [allExercises, prList, userRoutines, userSessions] = await Promise.all([
           exerciseService.getExercises(user?.id),
           workoutService.getPersonalRecords(user?.id),
+          routineService.getRoutines(user?.id),
+          workoutService.getWorkoutSessions(user?.id),
         ]);
-        setExercises(exList);
+
+        const activeExerciseIds = new Set<string>();
+        const activeExerciseNames = new Set<string>();
+
+        // 1. Ejercicios incluidos en las rutinas guardadas del usuario
+        userRoutines.forEach((routine) => {
+          routine.days?.forEach((day) => {
+            day.exercises?.forEach((ex) => {
+              if (ex.exerciseId) activeExerciseIds.add(ex.exerciseId);
+              if (ex.exercise?.id) activeExerciseIds.add(ex.exercise.id);
+              if (ex.exercise?.slug) activeExerciseIds.add(ex.exercise.slug);
+              if (ex.exercise?.name) activeExerciseNames.add(ex.exercise.name.toLowerCase().trim());
+            });
+          });
+        });
+
+        // 2. Ejercicios con registros en sesiones del historial
+        userSessions.forEach((session) => {
+          session.exercises?.forEach((ex) => {
+            if (ex.exerciseId) activeExerciseIds.add(ex.exerciseId);
+            if (ex.exerciseName) activeExerciseNames.add(ex.exerciseName.toLowerCase().trim());
+          });
+        });
+
+        // 3. Ejercicios en récords personales
+        prList.forEach((pr) => {
+          if (pr.exerciseId) activeExerciseIds.add(pr.exerciseId);
+          if (pr.exerciseName) activeExerciseNames.add(pr.exerciseName.toLowerCase().trim());
+        });
+
+        const relevantExercisesMap = new Map<string, Exercise>();
+
+        // Filtrar catálogo global y custom exercises
+        allExercises.forEach((ex) => {
+          const idMatches = activeExerciseIds.has(ex.id) || (ex.slug && activeExerciseIds.has(ex.slug));
+          const nameMatches = activeExerciseNames.has(ex.name.toLowerCase().trim());
+          if (idMatches || nameMatches) {
+            relevantExercisesMap.set(ex.id, ex);
+          }
+        });
+
+        // Incluir ejercicios que vengan embebidos en las rutinas directamente
+        userRoutines.forEach((routine) => {
+          routine.days?.forEach((day) => {
+            day.exercises?.forEach((dayEx) => {
+              if (dayEx.exercise && dayEx.exercise.id) {
+                const alreadyIncluded = Array.from(relevantExercisesMap.values()).some(
+                  (e) => e.name.toLowerCase().trim() === dayEx.exercise!.name.toLowerCase().trim()
+                );
+                if (!alreadyIncluded) {
+                  relevantExercisesMap.set(dayEx.exercise.id, dayEx.exercise);
+                }
+              }
+            });
+          });
+        });
+
+        const filteredList = Array.from(relevantExercisesMap.values()).sort((a, b) =>
+          a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+        );
+
+        setExercises(filteredList);
         setRecords(prList);
 
-        if (exList.length > 0) {
-          // Seleccionar por defecto Press banca o el primero
-          const defaultEx = exList.find((e) => e.slug.includes('press-banca')) || exList[0];
+        if (filteredList.length > 0) {
+          // Seleccionar por defecto Press banca si existe entre sus ejercicios o el primero
+          const defaultEx = filteredList.find((e) => e.slug.includes('press-banca')) || filteredList[0];
           setSelectedExerciseId(defaultEx.id);
+        } else {
+          setSelectedExerciseId('');
         }
       } finally {
         setIsLoading(false);
@@ -51,15 +117,19 @@ export const ProgressPage: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!selectedExerciseId) return;
+    if (!selectedExerciseId) {
+      setProgressData([]);
+      return;
+    }
 
     const loadExerciseProgress = async () => {
-      const data = await workoutService.getExerciseProgressData(selectedExerciseId, user?.id);
+      const selected = exercises.find((e) => e.id === selectedExerciseId);
+      const data = await workoutService.getExerciseProgressData(selectedExerciseId, user?.id, selected?.name);
       setProgressData(data);
     };
 
     loadExerciseProgress();
-  }, [selectedExerciseId, user]);
+  }, [selectedExerciseId, user, exercises]);
 
   const selectedExercise = exercises.find((e) => e.id === selectedExerciseId);
 
@@ -90,17 +160,32 @@ export const ProgressPage: React.FC = () => {
         <label className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1.5">
           Seleccionar Ejercicio
         </label>
-        <select
-          value={selectedExerciseId}
-          onChange={(e) => setSelectedExerciseId(e.target.value)}
-          className="w-full px-3.5 py-2.5 bg-slate-900 border border-gym-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-emerald-500"
-        >
-          {exercises.map((ex) => (
-            <option key={ex.id} value={ex.id}>
-              {ex.name} ({ex.mainMuscleGroup})
-            </option>
-          ))}
-        </select>
+        {isLoading ? (
+          <div className="py-2.5 px-3 bg-slate-900 border border-gym-border rounded-xl text-xs text-gray-400 animate-pulse">
+            Cargando ejercicios de tus rutinas...
+          </div>
+        ) : exercises.length === 0 ? (
+          <div className="p-3.5 rounded-xl bg-slate-900 border border-gym-border text-center space-y-1">
+            <p className="text-xs font-bold text-gray-300">
+              No tienes ejercicios en tus rutinas guardadas ni historial aún.
+            </p>
+            <p className="text-[11px] text-gray-500">
+              Crea o carga una rutina en "Mis Rutinas" para analizar tu evolución y marcas personales aquí.
+            </p>
+          </div>
+        ) : (
+          <select
+            value={selectedExerciseId}
+            onChange={(e) => setSelectedExerciseId(e.target.value)}
+            className="w-full px-3.5 py-2.5 bg-slate-900 border border-gym-border rounded-xl text-sm font-bold text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+          >
+            {exercises.map((ex) => (
+              <option key={ex.id} value={ex.id}>
+                {ex.name} ({ex.mainMuscleGroup})
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Indicadores Clave del Ejercicio */}

@@ -76,10 +76,16 @@ export const SetCard: React.FC<SetCardProps> = ({
 
       {/* 3. Metas, Historial Previo y Sugerencia de Peso */}
       <div className="space-y-1.5 mb-2">
-        {/* Metas configuradas */}
-        <div className="flex items-center justify-between text-xs px-2.5 py-1 rounded-xl bg-gym-bg/80 border border-gym-border/50">
-          <span className="text-gray-400 font-semibold text-[11px] sm:text-xs">
-            🎯 Objetivo: <strong className="text-white font-bold">{card.targetRepsMin}–{card.targetRepsMax} reps</strong>
+        {/* Metas configuradas para la serie */}
+        <div className="flex items-center justify-between text-xs px-3 py-1.5 rounded-xl bg-gym-bg/90 border border-gym-border/60">
+          <span className="text-gray-300 font-semibold text-[11px] sm:text-xs flex items-center gap-1">
+            <span className="text-emerald-400">🎯 Meta:</span>
+            <strong className="text-white font-bold">
+              {card.targetRepsMin === card.targetRepsMax
+                ? `${card.targetRepsMin} reps`
+                : `${card.targetRepsMin}–${card.targetRepsMax} reps`}
+              {` | ${card.targetWeight ?? 0} kg`}
+            </strong>
           </span>
           <span className="text-gray-400 font-semibold text-[11px] sm:text-xs">
             ⏱️ Descanso: <strong className="text-white font-bold">{card.restSeconds}s</strong>
@@ -143,7 +149,7 @@ export const SetCard: React.FC<SetCardProps> = ({
         <div className="mb-2 text-center">
           <span className="inline-flex items-center gap-1 text-[10px] text-amber-400/90 font-medium">
             <AlertCircle className="w-3 h-3" />
-            Objetivo: {card.targetRepsMin}–{card.targetRepsMax} | Registrando: {reps} reps
+            Meta: {card.targetRepsMin === card.targetRepsMax ? `${card.targetRepsMin}` : `${card.targetRepsMin}–${card.targetRepsMax}`} reps | {card.targetWeight ?? 0} kg | Registrando: {reps} reps
           </span>
         </div>
       )}
