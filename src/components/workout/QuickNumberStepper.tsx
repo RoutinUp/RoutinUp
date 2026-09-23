@@ -46,23 +46,23 @@ export const QuickNumberStepper: React.FC<QuickNumberStepperProps> = ({
   };
 
   return (
-    <div className="flex flex-col bg-gym-cardLighter/70 border border-gym-border/80 rounded-2xl p-3">
-      <div className="flex items-center justify-between mb-1.5 px-1">
-        <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{label}</span>
-        {unit && <span className="text-xs font-semibold text-emerald-400">{unit}</span>}
+    <div className="flex flex-col bg-gym-cardLighter/70 border border-gym-border/80 rounded-2xl p-2.5 sm:p-3">
+      <div className="flex items-center justify-between mb-1 px-1">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</span>
+        {unit && <span className="text-[11px] font-semibold text-emerald-400">{unit}</span>}
       </div>
 
       {/* Input principal y botones +/- principales */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-1.5 w-full">
         <button
           type="button"
           onClick={handleDecrement}
-          className="w-12 h-12 rounded-xl bg-gym-card hover:bg-slate-700 active:scale-95 border border-gym-border flex items-center justify-center text-white transition-all select-none"
+          className="w-10 h-10 rounded-xl bg-gym-card hover:bg-slate-700 active:scale-95 border border-gym-border flex items-center justify-center text-white transition-all select-none flex-shrink-0"
         >
-          <Minus className="w-5 h-5 stroke-[2.5]" />
+          <Minus className="w-4 h-4 stroke-[2.5]" />
         </button>
 
-        <div className="flex-1 text-center min-w-0">
+        <div className="flex-1 min-w-0 text-center flex items-center justify-center">
           <input
             type="number"
             inputMode={label.toLowerCase().includes('peso') ? 'decimal' : 'numeric'}
@@ -86,28 +86,36 @@ export const QuickNumberStepper: React.FC<QuickNumberStepperProps> = ({
               onChange(parsed);
             }}
             onWheel={(e) => (e.currentTarget as HTMLInputElement).blur()}
-            className="w-full min-h-[44px] px-2 py-2 text-center text-[16px] sm:text-xl md:text-2xl font-black bg-slate-900/90 border border-gym-border/90 focus:border-emerald-500 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/50 [appearance:none] [-webkit-appearance:none] transition-colors touch-manipulation"
+            className="w-full min-h-[40px] px-1 py-1 text-center text-lg sm:text-xl font-black bg-slate-900/90 border border-gym-border/90 focus:border-emerald-500 rounded-xl text-white focus:outline-none focus:ring-1 focus:ring-emerald-500/50 [appearance:none] [-webkit-appearance:none] overflow-visible transition-colors touch-manipulation m-0"
+            style={{
+              WebkitAppearance: 'none',
+              MozAppearance: 'textfield',
+              width: '100%',
+              textAlign: 'center',
+              padding: '0 4px',
+              fontSize: '1.25rem',
+            }}
           />
         </div>
 
         <button
           type="button"
           onClick={handleIncrement}
-          className="w-12 h-12 rounded-xl bg-gym-card hover:bg-slate-700 active:scale-95 border border-gym-border flex items-center justify-center text-white transition-all select-none"
+          className="w-10 h-10 rounded-xl bg-gym-card hover:bg-slate-700 active:scale-95 border border-gym-border flex items-center justify-center text-white transition-all select-none flex-shrink-0"
         >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
+          <Plus className="w-4 h-4 stroke-[2.5]" />
         </button>
       </div>
 
       {/* Atajos de incremento rápido con 1 toque */}
       {quickIncrements.length > 0 && (
-        <div className="flex items-center justify-center gap-1.5 mt-2.5 pt-2 border-t border-gym-border/50">
+        <div className="flex items-center justify-center gap-1 mt-2 pt-1.5 border-t border-gym-border/50">
           {quickIncrements.map((inc) => (
             <button
               key={inc}
               type="button"
               onClick={() => handleQuickAdd(inc)}
-              className="flex-1 py-1 px-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-[11px] font-bold text-gray-300 active:scale-95 transition-all"
+              className="flex-1 py-1 px-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-[10px] sm:text-[11px] font-bold text-gray-300 active:scale-95 transition-all text-center"
             >
               +{inc}
             </button>

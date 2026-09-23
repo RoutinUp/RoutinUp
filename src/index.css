@@ -30,11 +30,12 @@
   input[type="number"],
   input[inputmode="numeric"],
   input[inputmode="decimal"] {
-    min-height: 44px;
+    min-height: 40px;
     font-size: 16px;
     -webkit-appearance: none;
     appearance: none;
     -moz-appearance: textfield;
+    overflow: visible;
   }
 
   input[type="number"]::-webkit-inner-spin-button,
