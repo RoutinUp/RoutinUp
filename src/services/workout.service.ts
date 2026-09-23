@@ -107,47 +107,101 @@ export const workoutService = {
     return null;
   },
 
-  // Obtener todos los récords personales del usuario actual
+  // Obtener todos los récords personales del usuario actual agrupados de forma única por ejercicio
   async getPersonalRecords(userId?: string): Promise<PersonalRecord[]> {
     if (!userId) return [];
 
-    if (!isSupabaseConfigured) {
-      const stored = localStorage.getItem(getUserPRsKey(userId));
-      return stored ? JSON.parse(stored) : [];
-    }
+    // 1. Obtenemos las sesiones completadas, fuente primaria de verdad de todas las series realizadas
+    const sessions = await this.getWorkoutSessions(userId);
 
-    try {
-      const { data, error } = await supabase
-        .from('personal_records')
-        .select(`
-          id, user_id, exercise_id, record_type, value, reps, achieved_at,
-          exercises (name)
-        `)
-        .eq('user_id', userId)
-        .order('achieved_at', { ascending: false });
+    // Mapa para asegurar exactamente 1 entrada por ejercicio único
+    const bestPRsMap = new Map<string, PersonalRecord>();
 
-      if (error || !data) {
-        const stored = localStorage.getItem(getUserPRsKey(userId));
-        return stored ? JSON.parse(stored) : [];
+    // Extraer mejor marca histórica de todas las sesiones registradas
+    sessions.forEach((s) => {
+      s.exercises.forEach((ex) => {
+        if (ex.status === 'completed' || (ex.sets && ex.sets.length > 0)) {
+          ex.sets.forEach((set) => {
+            const weight = Number(set.weight) || 0;
+            const reps = Number(set.reps) || 0;
+            if (weight > 0 && reps > 0) {
+              const exerciseKey = (ex.exerciseName || ex.exerciseId).toLowerCase().trim();
+              const existing = bestPRsMap.get(exerciseKey);
+
+              const isBetter = !existing ||
+                weight > existing.value ||
+                (weight === existing.value && reps > (existing.reps || 0));
+
+              if (isBetter) {
+                bestPRsMap.set(exerciseKey, {
+                  id: `pr-${ex.exerciseId}-${s.id}-${set.setNumber}`,
+                  userId,
+                  exerciseId: ex.exerciseId,
+                  exerciseName: ex.exerciseName || 'Ejercicio',
+                  recordType: 'max_weight',
+                  value: weight,
+                  reps: reps,
+                  achievedAt: set.completedAt || s.completedAt || s.startedAt,
+                });
+              }
+            }
+          });
+        }
+      });
+    });
+
+    // 2. Complementar con la tabla personal_records de Supabase si estuviera configurada
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('personal_records')
+          .select(`
+            id, user_id, exercise_id, record_type, value, reps, achieved_at,
+            exercises (name)
+          `)
+          .eq('user_id', userId);
+
+        if (data && !error) {
+          data.forEach((pr: any) => {
+            const exerciseName = pr.exercises?.name || 'Ejercicio';
+            const exerciseKey = exerciseName.toLowerCase().trim();
+            const val = Number(pr.value) || 0;
+            const reps = Number(pr.reps) || 0;
+
+            if (val > 0) {
+              const existing = bestPRsMap.get(exerciseKey);
+              const isBetter = !existing ||
+                val > existing.value ||
+                (val === existing.value && reps > (existing.reps || 0));
+
+              if (isBetter) {
+                bestPRsMap.set(exerciseKey, {
+                  id: pr.id,
+                  userId: pr.user_id,
+                  exerciseId: pr.exercise_id,
+                  exerciseName,
+                  recordType: pr.record_type,
+                  value: val,
+                  reps: reps,
+                  achievedAt: pr.achieved_at,
+                });
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Error al consultar personal_records en Supabase:', err);
       }
-
-      const records: PersonalRecord[] = data.map((pr: any) => ({
-        id: pr.id,
-        userId: pr.user_id,
-        exerciseId: pr.exercise_id,
-        exerciseName: pr.exercises?.name || 'Ejercicio',
-        recordType: pr.record_type,
-        value: Number(pr.value),
-        reps: pr.reps,
-        achievedAt: pr.achieved_at,
-      }));
-
-      localStorage.setItem(getUserPRsKey(userId), JSON.stringify(records));
-      return records;
-    } catch {
-      const stored = localStorage.getItem(getUserPRsKey(userId));
-      return stored ? JSON.parse(stored) : [];
     }
+
+    // Convertir a lista y ordenar por mayor peso descendente (o desempate por reps)
+    const uniquePRs = Array.from(bestPRsMap.values()).sort((a, b) => {
+      if (b.value !== a.value) return b.value - a.value;
+      return (b.reps || 0) - (a.reps || 0);
+    });
+
+    localStorage.setItem(getUserPRsKey(userId), JSON.stringify(uniquePRs));
+    return uniquePRs;
   },
 
   // Guardar un entrenamiento completado y calcular PRs para el usuario actual
@@ -162,21 +216,29 @@ export const workoutService = {
     session.exercises.forEach((ex) => {
       if (ex.status === 'completed') {
         ex.sets.forEach((set) => {
-          totalVolume += (set.weight || 0) * (set.reps || 0);
+          const setWeight = Number(set.weight) || 0;
+          const setReps = Number(set.reps) || 0;
+          totalVolume += setWeight * setReps;
 
-          // Verificar Récord de Peso Máximo (PR) en este ejercicio
-          const existingMaxWeight = currentPRs.find(
-            (pr) => pr.exerciseId === ex.exerciseId && pr.recordType === 'max_weight'
+          // Verificar si supera el récord histórico único de este ejercicio
+          const existingPR = currentPRs.find(
+            (pr) =>
+              (pr.exerciseName && ex.exerciseName && pr.exerciseName.toLowerCase().trim() === ex.exerciseName.toLowerCase().trim()) ||
+              pr.exerciseId === ex.exerciseId
           );
 
-          if (set.weight > 0 && (!existingMaxWeight || set.weight > existingMaxWeight.value)) {
+          const isNewPR = setWeight > 0 && (!existingPR ||
+            setWeight > existingPR.value ||
+            (setWeight === existingPR.value && setReps > (existingPR.reps || 0)));
+
+          if (isNewPR) {
             set.isPR = true;
             newPRs.push({
               exerciseId: ex.exerciseId,
               exerciseName: ex.exerciseName,
               type: 'Mayor Peso',
-              value: set.weight,
-              reps: set.reps,
+              value: setWeight,
+              reps: setReps,
             });
           }
         });
@@ -335,30 +397,43 @@ export const workoutService = {
         return (idMatches || nameMatches) && (e.status === 'completed' || (e.sets && e.sets.length > 0));
       });
       if (match && match.sets.length > 0) {
-        const completedSets = match.sets.filter((st) => st.reps > 0);
+        const completedSets = match.sets.filter((st) => (Number(st.reps) || 0) > 0);
         if (completedSets.length > 0) {
-          const maxWeightSet = completedSets.reduce((prev, curr) =>
-            curr.weight > prev.weight ? curr : prev
-          );
-
-          let vol = 0;
-          completedSets.forEach((st) => {
-            vol += st.weight * st.reps;
+          // Seleccionar la serie con mayor peso; si empatan en peso, elegir la de MAYOR número de repeticiones
+          const maxWeightSet = completedSets.reduce((prev, curr) => {
+            const prevW = Number(prev.weight) || 0;
+            const currW = Number(curr.weight) || 0;
+            const prevR = Number(prev.reps) || 0;
+            const currR = Number(curr.reps) || 0;
+            if (currW > prevW) return curr;
+            if (currW === prevW && currR > prevR) return curr;
+            return prev;
           });
 
-          // Fórmula de Brzycki para estimar 1RM
-          const est1RM = maxWeightSet.reps === 1
-            ? maxWeightSet.weight
-            : Math.round(maxWeightSet.weight * (1 + maxWeightSet.reps / 30) * 10) / 10;
+          let best1RM = 0;
+          let vol = 0;
+          completedSets.forEach((st) => {
+            const w = Number(st.weight) || 0;
+            const r = Number(st.reps) || 0;
+            vol += w * r;
+
+            // Fórmula de Brzycki para estimar 1RM por serie
+            const est1RM = r === 1
+              ? w
+              : Math.round(w * (1 + r / 30) * 10) / 10;
+            if (est1RM > best1RM) {
+              best1RM = est1RM;
+            }
+          });
 
           points.push({
             date: s.startedAt,
             formattedDate: new Date(s.startedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }),
-            maxWeight: maxWeightSet.weight,
-            repsAtMaxWeight: maxWeightSet.reps,
+            maxWeight: Number(maxWeightSet.weight) || 0,
+            repsAtMaxWeight: Number(maxWeightSet.reps) || 0,
             totalVolume: vol,
             totalSets: completedSets.length,
-            estimatedOneRepMax: est1RM,
+            estimatedOneRepMax: best1RM,
           });
         }
       }
