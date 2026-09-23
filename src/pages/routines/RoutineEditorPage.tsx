@@ -140,7 +140,7 @@ const ensureSetsConfig = (dayEx: WorkoutDayExercise): RoutineSetDetail[] => {
       };
     });
   }
-  const count = Math.max(1, dayEx.targetSets || 4);
+  const count = Math.max(1, dayEx.targetSets || 3);
   const repsMin = dayEx.targetRepsMin ?? 8;
   const repsMax = dayEx.targetRepsMax ?? 10;
   const weight = dayEx.targetWeight || 0;
@@ -358,14 +358,18 @@ export const RoutineEditorPage: React.FC = () => {
     const currentDay = days[activeDayIndex];
     if (!currentDay) return;
 
-    const defaultSets = 4;
-    const defaultReps = 10;
-    const defaultWeight = 50;
+    const defaultSets = 3;
+    const defaultRepsMin = 8;
+    const defaultRepsMax = 10;
+    const defaultRestSeconds = 90;
+    const defaultWeight = 0;
     const initialSetsConfig: RoutineSetDetail[] = Array.from(
       { length: defaultSets },
       (_, i) => ({
         setNumber: i + 1,
-        targetReps: defaultReps,
+        targetRepsMin: defaultRepsMin,
+        targetRepsMax: defaultRepsMax,
+        targetReps: defaultRepsMax,
         targetWeight: defaultWeight,
       })
     );
@@ -377,10 +381,10 @@ export const RoutineEditorPage: React.FC = () => {
       exercise,
       exerciseOrder: currentDay.exercises.length + 1,
       targetSets: defaultSets,
-      targetRepsMin: 8,
-      targetRepsMax: defaultReps,
+      targetRepsMin: defaultRepsMin,
+      targetRepsMax: defaultRepsMax,
       targetWeight: defaultWeight,
-      restSeconds: 90,
+      restSeconds: defaultRestSeconds,
       notes: '',
       setsConfig: initialSetsConfig,
     };
@@ -714,10 +718,12 @@ export const RoutineEditorPage: React.FC = () => {
         const mappedExercises: WorkoutDayExercise[] = (aiDay.exercises || []).map(
           (aiEx, exIdx) => {
             totalExercisesCount++;
-            const muscle = geminiService.mapToMuscleGroup(aiEx.grupoMuscular);
+            const rawMuscle = aiEx.muscle_group || aiEx.grupoMuscular || 'Cuerpo Completo';
+            const muscle = geminiService.mapToMuscleGroup(rawMuscle);
+            const exName = aiEx.name || aiEx.nombre || 'Ejercicio';
 
             // Buscar si el ejercicio coincide con el catálogo existente
-            const normalizedAiName = aiEx.nombre.toLowerCase().trim();
+            const normalizedAiName = exName.toLowerCase().trim();
             const matchedCatalogEx = allExercises.find((catEx) => {
               const catName = catEx.name.toLowerCase().trim();
               return (
@@ -728,32 +734,43 @@ export const RoutineEditorPage: React.FC = () => {
             });
 
             const dayExId = 'd-ex-' + Math.random().toString(36).substring(2, 9);
+            const setsCount = Number(aiEx.sets) > 0 ? Number(aiEx.sets) : (aiEx.series?.length || 3);
+            const defaultRepsMin = Number(aiEx.reps_min ?? 8);
+            const defaultRepsMax = Number(aiEx.reps_max ?? 10);
+            const defaultWeight = typeof aiEx.weight === 'number'
+              ? aiEx.weight
+              : parseFloat(String(aiEx.weight ?? '0').replace(',', '.')) || 0;
 
             const setsConfig: RoutineSetDetail[] =
               aiEx.series && aiEx.series.length > 0
                 ? aiEx.series.map((s, sIdx) => {
-                    const rMin = (s as any).repsMin || s.reps || 8;
-                    const rMax = (s as any).repsMax || s.reps || 10;
+                    const rMin = Number(s.repsMin ?? (s as any).reps_min ?? s.reps ?? defaultRepsMin);
+                    const rMax = Number(s.repsMax ?? (s as any).reps_max ?? s.reps ?? defaultRepsMax);
+                    const w = typeof s.peso === 'number'
+                      ? s.peso
+                      : typeof (s as any).weight === 'number'
+                      ? (s as any).weight
+                      : parseFloat(String(s.peso ?? (s as any).weight ?? defaultWeight).replace(',', '.')) || 0;
                     return {
                       setNumber: sIdx + 1,
                       targetRepsMin: rMin,
                       targetRepsMax: rMax,
-                      targetReps: s.reps || rMax,
-                      targetWeight: s.peso || 0,
+                      targetReps: rMax,
+                      targetWeight: w,
                     };
                   })
-                : Array.from({ length: 4 }, (_, sIdx) => ({
+                : Array.from({ length: setsCount }, (_, sIdx) => ({
                     setNumber: sIdx + 1,
-                    targetRepsMin: 8,
-                    targetRepsMax: 10,
-                    targetReps: 10,
-                    targetWeight: 0,
+                    targetRepsMin: defaultRepsMin,
+                    targetRepsMax: defaultRepsMax,
+                    targetReps: defaultRepsMax,
+                    targetWeight: defaultWeight,
                   }));
 
             // Si los pesos o repeticiones varían entre series, activar el modo de desglose individual
-            const firstWeight = setsConfig[0]?.targetWeight ?? 0;
-            const firstRepsMin = setsConfig[0]?.targetRepsMin ?? 8;
-            const firstRepsMax = setsConfig[0]?.targetRepsMax ?? 10;
+            const firstWeight = setsConfig[0]?.targetWeight ?? defaultWeight;
+            const firstRepsMin = setsConfig[0]?.targetRepsMin ?? defaultRepsMin;
+            const firstRepsMax = setsConfig[0]?.targetRepsMax ?? defaultRepsMax;
             const varies = setsConfig.some(
               (s) =>
                 s.targetWeight !== firstWeight ||
@@ -767,9 +784,9 @@ export const RoutineEditorPage: React.FC = () => {
             // Si no existe en el catálogo, crear objeto sintético de ejercicio
             const finalExercise: Exercise = matchedCatalogEx || {
               id: 'ai-ex-' + Math.random().toString(36).substring(2, 9),
-              name: aiEx.nombre,
-              slug: aiEx.nombre.toLowerCase().replace(/\s+/g, '-'),
-              description: `Ejercicio generado por IA (${aiEx.grupoMuscular})`,
+              name: exName,
+              slug: exName.toLowerCase().replace(/\s+/g, '-'),
+              description: `Ejercicio generado por IA (${rawMuscle})`,
               mainMuscleGroup: muscle,
               secondaryMuscles: [],
               equipment: 'otro',
@@ -789,9 +806,9 @@ export const RoutineEditorPage: React.FC = () => {
               exercise: finalExercise,
               exerciseOrder: exIdx + 1,
               targetSets: setsConfig.length,
-              targetRepsMin: setsConfig[0]?.targetRepsMin ?? 8,
-              targetRepsMax: setsConfig[0]?.targetRepsMax ?? 10,
-              targetWeight: setsConfig[0]?.targetWeight ?? 0,
+              targetRepsMin: setsConfig[0]?.targetRepsMin ?? defaultRepsMin,
+              targetRepsMax: setsConfig[0]?.targetRepsMax ?? defaultRepsMax,
+              targetWeight: setsConfig[0]?.targetWeight ?? defaultWeight,
               restSeconds: 90,
               notes: '',
               setsConfig,
@@ -1276,12 +1293,12 @@ export const RoutineEditorPage: React.FC = () => {
                                     Series
                                   </span>
                                   <FlexibleNumericInput
-                                    value={dayEx.targetSets || 4}
+                                    value={dayEx.targetSets || 3}
                                     onChange={(val) => handleSimpleSetsChange(exIdx, val)}
                                     min={1}
                                     max={20}
                                     step={1}
-                                    fallbackValue={4}
+                                    fallbackValue={3}
                                     autoSelectOnFocus
                                     className="w-full text-center font-black text-white bg-slate-900 border border-gym-border/80 rounded-lg py-1 text-sm focus:border-emerald-500 focus:outline-none"
                                   />
@@ -1342,7 +1359,7 @@ export const RoutineEditorPage: React.FC = () => {
                                   <strong className="text-emerald-400 font-bold">
                                     {dayEx.targetWeight || 0} kg
                                   </strong>{' '}
-                                  para las {dayEx.targetSets || 4} series.
+                                  para las {dayEx.targetSets || 3} series.
                                 </span>
                                 <button
                                   type="button"

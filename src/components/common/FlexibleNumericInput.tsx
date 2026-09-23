@@ -5,7 +5,7 @@ interface FlexibleNumericInputProps {
   onChange: (val: number) => void;
   min?: number;
   max?: number;
-  step?: number;
+  step?: number | string;
   placeholder?: string;
   className?: string;
   fallbackValue?: number;
@@ -19,8 +19,9 @@ interface FlexibleNumericInputProps {
  * FlexibleNumericInput
  * Input numérico con estado desacoplado que permite edición fluida:
  * - Permite dejar el campo vacío ("") mientras el usuario borra con Backspace para tipear un nuevo número.
+ * - Soporta números decimales aceptando comas y puntos (ej. 22,5 o 22.5) reemplazando comas por puntos en onChange.
  * - Protegido contra re-renderizados del padre mientras el campo tiene el foco (isFocused).
- * - Validación suave: Aplica límites (min, max) y valor fallback ÚNICAMENTE en onBlur.
+ * - Validación suave con parseFloat: Aplica límites (min, max) y valor fallback ÚNICAMENTE en onBlur.
  */
 export const FlexibleNumericInput: React.FC<FlexibleNumericInputProps> = ({
   value,
@@ -41,8 +42,13 @@ export const FlexibleNumericInput: React.FC<FlexibleNumericInputProps> = ({
   );
   const [isFocused, setIsFocused] = useState<boolean>(false);
 
+  const isDecimal =
+    step === 'any' ||
+    step === 0.5 ||
+    (typeof step === 'string' && step.includes('.')) ||
+    (typeof step === 'number' && step % 1 !== 0);
+
   // Sincronizar estado local ÚNICAMENTE cuando el input NO tiene el foco.
-  // Esto evita que si el usuario borró todo (""), una re-renderización del padre fuerce el valor anterior.
   useEffect(() => {
     if (!isFocused) {
       setTextValue(
@@ -52,11 +58,13 @@ export const FlexibleNumericInput: React.FC<FlexibleNumericInputProps> = ({
   }, [value, isFocused]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
+    // Reemplaza comas por puntos para aceptar tanto teclado con coma como con punto
+    const raw = e.target.value.replace(',', '.');
+    if (isDecimal && !/^-?[0-9]*\.?[0-9]*$/.test(raw)) return;
     setTextValue(raw);
 
-    // Si el usuario ingresó un valor numérico real, actualizar al padre
-    if (raw.trim() !== '') {
+    // Si el usuario ingresó un valor numérico real, actualizar al padre usando parseFloat
+    if (raw.trim() !== '' && raw !== '-' && raw !== '.') {
       const parsed = parseFloat(raw);
       if (!isNaN(parsed)) {
         onChange(parsed);
@@ -73,16 +81,20 @@ export const FlexibleNumericInput: React.FC<FlexibleNumericInputProps> = ({
 
   const handleBlur = () => {
     setIsFocused(false);
-    let parsed = parseFloat(textValue);
+    const sanitized = textValue.replace(',', '.');
+    let parsed = parseFloat(sanitized);
 
     // Validación suave en onBlur:
-    // Si el campo quedó vacío ("") o es NaN, asignar el fallback o el mínimo permitido
-    if (isNaN(parsed) || textValue.trim() === '') {
-      parsed = fallbackValue !== undefined ? fallbackValue : (min !== undefined ? min : 1);
+    if (isNaN(parsed) || sanitized.trim() === '') {
+      parsed = fallbackValue !== undefined ? fallbackValue : (min !== undefined ? min : 0);
     }
 
     if (min !== undefined && parsed < min) parsed = min;
     if (max !== undefined && parsed > max) parsed = max;
+
+    if (isDecimal) {
+      parsed = Math.round(parsed * 100) / 100;
+    }
 
     setTextValue(parsed.toString());
     onChange(parsed);
@@ -91,7 +103,8 @@ export const FlexibleNumericInput: React.FC<FlexibleNumericInputProps> = ({
 
   return (
     <input
-      type="number"
+      type={isDecimal ? 'text' : 'number'}
+      inputMode={isDecimal ? 'decimal' : 'numeric'}
       id={id}
       title={title}
       value={textValue}
@@ -100,7 +113,7 @@ export const FlexibleNumericInput: React.FC<FlexibleNumericInputProps> = ({
       onBlur={handleBlur}
       min={min}
       max={max}
-      step={step}
+      step={step ?? (isDecimal ? '0.5' : 1)}
       placeholder={placeholder}
       className={className}
     />

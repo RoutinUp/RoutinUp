@@ -5,7 +5,7 @@ interface QuickNumberStepperProps {
   label: string;
   value: number;
   onChange: (val: number) => void;
-  step?: number;
+  step?: number | string;
   min?: number;
   max?: number;
   quickIncrements?: number[];
@@ -22,21 +22,28 @@ export const QuickNumberStepper: React.FC<QuickNumberStepperProps> = ({
   quickIncrements = [],
   unit = '',
 }) => {
-  const [localText, setLocalText] = useState<string>(value !== undefined && value !== null ? value.toString() : '');
+  const isWeight = label.toLowerCase().includes('peso');
+  const numericStep = typeof step === 'string' ? (parseFloat(step) || (isWeight ? 0.5 : 1)) : step;
+  const effectiveStep = isWeight ? 0.5 : numericStep;
+
+  const [localText, setLocalText] = useState<string>(
+    value !== undefined && value !== null ? value.toString() : ''
+  );
 
   useEffect(() => {
-    const parsed = parseFloat(localText);
+    const parsed = parseFloat(localText.replace(',', '.'));
     if (isNaN(parsed) || parsed !== value) {
       setLocalText(value !== undefined && value !== null ? value.toString() : '');
     }
   }, [value]);
+
   const handleDecrement = () => {
-    const next = Math.max(min, Math.round((value - step) * 10) / 10);
+    const next = Math.max(min, Math.round((value - effectiveStep) * 10) / 10);
     onChange(next);
   };
 
   const handleIncrement = () => {
-    const next = Math.min(max, Math.round((value + step) * 10) / 10);
+    const next = Math.min(max, Math.round((value + effectiveStep) * 10) / 10);
     onChange(next);
   };
 
@@ -64,24 +71,30 @@ export const QuickNumberStepper: React.FC<QuickNumberStepperProps> = ({
 
         <div className="flex-1 min-w-0 text-center flex items-center justify-center">
           <input
-            type="number"
-            inputMode={label.toLowerCase().includes('peso') ? 'decimal' : 'numeric'}
-            step={step}
+            type={isWeight ? 'text' : 'number'}
+            inputMode={isWeight ? 'decimal' : 'numeric'}
+            step={isWeight ? '0.5' : step}
             value={localText}
             onChange={(e) => {
-              setLocalText(e.target.value);
-              const val = parseFloat(e.target.value);
+              const raw = e.target.value.replace(',', '.');
+              if (isWeight && !/^-?[0-9]*\.?[0-9]*$/.test(raw)) return;
+              setLocalText(raw);
+              const val = parseFloat(raw);
               if (!isNaN(val)) {
                 onChange(val);
               }
             }}
             onBlur={() => {
-              let parsed = parseFloat(localText);
-              if (isNaN(parsed) || localText.trim() === '') {
+              const sanitized = localText.replace(',', '.');
+              let parsed = parseFloat(sanitized);
+              if (isNaN(parsed) || sanitized.trim() === '') {
                 parsed = min;
               }
               if (parsed < min) parsed = min;
               if (parsed > max) parsed = max;
+              if (isWeight) {
+                parsed = Math.round(parsed * 100) / 100;
+              }
               setLocalText(parsed.toString());
               onChange(parsed);
             }}

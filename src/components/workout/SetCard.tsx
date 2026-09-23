@@ -123,7 +123,7 @@ export const SetCard: React.FC<SetCardProps> = ({
           label="Peso"
           value={weight}
           onChange={handleWeightChange}
-          step={2.5}
+          step={0.5}
           quickIncrements={[1, 2.5, 5]}
           unit="kg"
         />

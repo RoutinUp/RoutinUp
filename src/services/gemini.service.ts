@@ -3,13 +3,21 @@ import { MuscleGroup } from '../types/exercise';
 
 export interface AIGeneratedSet {
   reps: number;
+  repsMin?: number;
+  repsMax?: number;
   peso: number;
 }
 
 export interface AIGeneratedExercise {
-  nombre: string;
-  grupoMuscular: string;
-  series: AIGeneratedSet[];
+  name: string;
+  nombre?: string;
+  muscle_group: string;
+  grupoMuscular?: string;
+  sets: number;
+  reps_min: number;
+  reps_max: number;
+  weight: number;
+  series?: AIGeneratedSet[];
 }
 
 export interface AIGeneratedDay {
@@ -29,12 +37,22 @@ export const getGeminiApiKey = (): string => {
 
 const SYSTEM_INSTRUCTION = `Eres un entrenador personal y preparador físico de élite. Tu tarea es convertir el texto o descripción de entrenamiento del usuario (en lenguaje natural, notas o rutinas completas de uno o varios días) en una rutina estructurada de ejercicios dividida por días.
 
-INSTRUCCIÓN CRÍTICA DE DÍAS (ESTRICTAMENTE OBLIGATORIA):
-1. Detecta cuidadosamente todas las divisiones de días en el texto (por ejemplo: "Día 1", "Día 2", "Día 3", "Día 4", "Día A", "Día B", "Lunes", "Martes", "Miércoles", "Torso", "Piernas", "Push", "Pull", "Legs", saltos de línea principales, etc.).
-2. DEBES devolver obligatoriamente un arreglo llamado "days" donde cada elemento sea un día independiente con su propio "dayName" (ej: "Día 1: Torso A", "Día 2: Piernas A", "Día 3: Pecho y Bíceps") y su lista "exercises".
-3. NUNCA mezcles todos los ejercicios en un solo día si el usuario describió o mencionó varios días.
-4. Si el texto describe 3 días, el arreglo "days" DEBE tener 3 objetos; si describe 4 días, DEBE tener 4 objetos.
-5. Solo si el texto describe explícitamente una sola sesión sin mención de otros días, el arreglo "days" contendrá 1 solo día (ej: "Día 1: Entrenamiento General").
+INSTRUCCIÓN CRÍTICA DE DÍAS Y PROCESAMIENTO (ESTRICTAMENTE OBLIGATORIA):
+1. Procesa TODOS los días solicitados por el usuario sin omitir ninguno. Si el usuario no especifica repeticiones mínimas/máximas o pesos para un ejercicio, asigna por defecto reps_min: 8, reps_max: 10 y weight: 0. Nunca dejes campos vacíos ni omitas días.
+2. Detecta cuidadosamente todas las divisiones de días en el texto (por ejemplo: "Día 1", "Día 2", "Día 3", "Día 4", "Día A", "Día B", "Lunes", "Martes", "Miércoles", "Torso", "Piernas", "Push", "Pull", "Legs", saltos de línea principales, etc.).
+3. DEBES devolver obligatoriamente un arreglo llamado "days" donde cada elemento sea un día independiente con su propio "dayName" (ej: "Día 1: Torso A", "Día 2: Piernas A", "Día 3: Pecho y Bíceps") y su lista "exercises".
+4. NUNCA mezcles todos los ejercicios en un solo día si el usuario describió o mencionó varios días.
+5. Si el texto describe 3 días, el arreglo "days" DEBE tener 3 objetos; si describe 4 días, DEBE tener 4 objetos.
+6. Solo si el texto describe explícitamente una sola sesión sin mención de otros días, el arreglo "days" contendrá 1 solo día (ej: "Día 1: Entrenamiento General").
+
+ESTRUCTURA OBLIGATORIA DE CADA EJERCICIO:
+Cada objeto dentro de la lista "exercises" DEBE tener exactamente las siguientes propiedades:
+- "name": string con el nombre del ejercicio en español (ej: "Press de banca plano").
+- "muscle_group": string con el grupo muscular principal.
+- "sets": número entero con la cantidad de series (ej: 3 o 4). Si el usuario no lo especifica, asigna 3.
+- "reps_min": número entero con las repeticiones mínimas del rango objetivo. Si no se especifica, asigna 8.
+- "reps_max": número entero con las repeticiones máximas del rango objetivo. Si no se especifica, asigna 10.
+- "weight": número con el peso sugerido o especificado en kg (acepta decimales como 22.5). Si no se especifica o es peso corporal, asigna 0.
 
 Debes responder ÚNICAMENTE con un JSON válido con el siguiente formato exacto:
 {
@@ -44,19 +62,20 @@ Debes responder ÚNICAMENTE con un JSON válido con el siguiente formato exacto:
       "dayName": "Día 1: Torso A",
       "exercises": [
         {
-          "nombre": "Press de banca plano",
-          "grupoMuscular": "Pecho",
-          "series": [
-            { "reps": 10, "peso": 80 },
-            { "reps": 8, "peso": 85 }
-          ]
+          "name": "Press de banca plano",
+          "muscle_group": "Pecho",
+          "sets": 4,
+          "reps_min": 8,
+          "reps_max": 10,
+          "weight": 80
         },
         {
-          "nombre": "Remo con barra",
-          "grupoMuscular": "Espalda",
-          "series": [
-            { "reps": 8, "peso": 70 }
-          ]
+          "name": "Remo con barra",
+          "muscle_group": "Espalda",
+          "sets": 3,
+          "reps_min": 8,
+          "reps_max": 10,
+          "weight": 70
         }
       ]
     },
@@ -64,11 +83,12 @@ Debes responder ÚNICAMENTE con un JSON válido con el siguiente formato exacto:
       "dayName": "Día 2: Piernas A",
       "exercises": [
         {
-          "nombre": "Sentadilla con barra",
-          "grupoMuscular": "Piernas",
-          "series": [
-            { "reps": 10, "peso": 100 }
-          ]
+          "name": "Sentadilla con barra",
+          "muscle_group": "Piernas",
+          "sets": 3,
+          "reps_min": 8,
+          "reps_max": 10,
+          "weight": 100
         }
       ]
     }
@@ -76,13 +96,11 @@ Debes responder ÚNICAMENTE con un JSON válido con el siguiente formato exacto:
 }
 
 Reglas estrictas:
-1. "grupoMuscular" DEBE ser exactamente uno de los siguientes: "Pecho", "Espalda", "Piernas", "Hombros", "Bíceps", "Tríceps", "Core", "Cardio", o "Cuerpo Completo".
-2. Cada día en "days" debe tener su "dayName" descriptivo y su lista de "exercises".
-3. Cada ejercicio debe tener al menos una serie. Si el usuario escribe "4x10 con 50kg", genera 4 objetos en "series", cada uno con reps: 10 y peso: 50.
-4. Si el usuario no especificó peso (ej. flexiones, dominadas, sentadillas al aire), coloca peso: 0.
-5. Si el usuario no especificó repeticiones, asigna 10 reps por defecto.
-6. Interpreta pesos piramidales o variables (ej. "50kg, 60kg, 70kg") asignando el peso correspondiente a cada serie.
-7. NO agregues introducciones, conclusiones ni markdown fuera del JSON. Devuelve únicamente el objeto JSON.`;
+1. "muscle_group" DEBE ser exactamente uno de los siguientes: "Pecho", "Espalda", "Piernas", "Hombros", "Bíceps", "Tríceps", "Core", "Cardio", o "Cuerpo Completo".
+2. Cada día en "days" debe tener su "dayName" descriptivo y su lista "exercises".
+3. Procesa TODOS los días solicitados por el usuario sin omitir ninguno. Si el usuario no especifica repeticiones mínimas/máximas o pesos para un ejercicio, asigna por defecto reps_min: 8, reps_max: 10 y weight: 0. Nunca dejes campos vacíos ni omitas días.
+4. Si el usuario especifica un rango (ej: "8-12 reps"), asigna reps_min: 8 y reps_max: 12. Si especifica un número único (ej: "10 reps"), asigna reps_min: 10 y reps_max: 10.
+5. NO agregues introducciones, conclusiones ni bloques markdown fuera del JSON. Devuelve únicamente el objeto JSON.`;
 
 export const geminiService = {
   isConfigured(): boolean {
@@ -104,8 +122,8 @@ Texto del usuario para convertir:
 ${userPrompt.trim()}
 """
 
-RECUERDA: La estructura de respuesta DEBE tener la propiedad "days" con cada día separado en el arreglo:
-{ "nombre": "...", "days": [{ "dayName": "Día 1: ...", "exercises": [...] }, { "dayName": "Día 2: ...", "exercises": [...] }] }`;
+RECUERDA: La estructura de respuesta DEBE tener la propiedad "days" con cada día separado en el arreglo y cada ejercicio con name, muscle_group, sets, reps_min, reps_max, weight:
+{ "nombre": "...", "days": [{ "dayName": "Día 1: ...", "exercises": [{ "name": "...", "muscle_group": "...", "sets": 3, "reps_min": 8, "reps_max": 10, "weight": 0 }] }] }`;
 
     let rawText = '';
 
@@ -207,6 +225,49 @@ RECUERDA: La estructura de respuesta DEBE tener la propiedad "days" con cada dí
       (Array.isArray(parsedRaw) ? parsedRaw : []);
     let normalizedDays: AIGeneratedDay[] = [];
 
+    const parseExerciseItem = (ex: any, idx: number): AIGeneratedExercise => {
+      const name = String(ex.name || ex.nombre || `Ejercicio ${idx + 1}`).trim();
+      const muscle_group = String(ex.muscle_group || ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo').trim();
+      const sets = Number(ex.sets) > 0 ? Number(ex.sets) : Array.isArray(ex.series) && ex.series.length > 0 ? ex.series.length : 3;
+      const reps_min = Number(ex.reps_min ?? ex.repsMin ?? 8);
+      const reps_max = Number(ex.reps_max ?? ex.repsMax ?? ex.reps ?? 10);
+      const weight = typeof ex.weight === 'number'
+        ? ex.weight
+        : typeof ex.peso === 'number'
+        ? ex.peso
+        : parseFloat(String(ex.weight ?? ex.peso ?? '0').replace(',', '.')) || 0;
+
+      const series: AIGeneratedSet[] = Array.isArray(ex.series || ex.sets)
+        ? (ex.series || ex.sets).map((s: any) => ({
+            reps: Number(s.reps || s.repeticiones || reps_max),
+            repsMin: Number(s.repsMin || s.reps_min || reps_min),
+            repsMax: Number(s.repsMax || s.reps_max || reps_max),
+            peso: typeof s.peso === 'number'
+              ? s.peso
+              : typeof s.weight === 'number'
+              ? s.weight
+              : parseFloat(String(s.peso ?? s.weight ?? weight).replace(',', '.')) || 0,
+          }))
+        : Array.from({ length: sets }, () => ({
+            reps: reps_max,
+            repsMin: reps_min,
+            repsMax: reps_max,
+            peso: weight,
+          }));
+
+      return {
+        name,
+        nombre: name,
+        muscle_group,
+        grupoMuscular: muscle_group,
+        sets,
+        reps_min,
+        reps_max,
+        weight,
+        series,
+      };
+    };
+
     if (Array.isArray(rawDays) && rawDays.length > 0) {
       // Comprobar si los elementos son objetos de día (contienen exercises/ejercicios o dayName)
       const firstItem = rawDays[0];
@@ -222,16 +283,7 @@ RECUERDA: La estructura de respuesta DEBE tener la propiedad "days" con cada dí
           const dayName = d.dayName || d.nombre || d.name || d.nombreDia || `Día ${idx + 1}`;
           const rawExercises = d.exercises || d.ejercicios || [];
           const exercises: AIGeneratedExercise[] = Array.isArray(rawExercises)
-            ? rawExercises.map((ex: any) => ({
-                nombre: ex.nombre || ex.name || 'Ejercicio',
-                grupoMuscular: ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo',
-                series: Array.isArray(ex.series || ex.sets)
-                  ? (ex.series || ex.sets).map((s: any) => ({
-                      reps: Number(s.reps || s.repeticiones || 10),
-                      peso: Number(s.peso || s.weight || 0),
-                    }))
-                  : [{ reps: 10, peso: 0 }],
-              }))
+            ? rawExercises.map((ex: any, exIdx: number) => parseExerciseItem(ex, exIdx))
             : [];
 
           return {
@@ -247,16 +299,7 @@ RECUERDA: La estructura de respuesta DEBE tener la propiedad "days" con cada dí
           if (!dayMap.has(dayKey)) {
             dayMap.set(dayKey, []);
           }
-          dayMap.get(dayKey)!.push({
-            nombre: ex.nombre || ex.name || `Ejercicio ${idx + 1}`,
-            grupoMuscular: ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo',
-            series: Array.isArray(ex.series || ex.sets)
-              ? (ex.series || ex.sets).map((s: any) => ({
-                  reps: Number(s.reps || s.repeticiones || 10),
-                  peso: Number(s.peso || s.weight || 0),
-                }))
-              : [{ reps: 10, peso: 0 }],
-          });
+          dayMap.get(dayKey)!.push(parseExerciseItem(ex, idx));
         });
 
         normalizedDays = Array.from(dayMap.entries()).map(([dayName, exercises]) => ({
@@ -276,16 +319,7 @@ RECUERDA: La estructura de respuesta DEBE tener la propiedad "days" con cada dí
           if (!dayMap.has(dayKey)) {
             dayMap.set(dayKey, []);
           }
-          dayMap.get(dayKey)!.push({
-            nombre: ex.nombre || ex.name || `Ejercicio ${idx + 1}`,
-            grupoMuscular: ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo',
-            series: Array.isArray(ex.series || ex.sets)
-              ? (ex.series || ex.sets).map((s: any) => ({
-                  reps: Number(s.reps || s.repeticiones || 10),
-                  peso: Number(s.peso || s.weight || 0),
-                }))
-              : [{ reps: 10, peso: 0 }],
-          });
+          dayMap.get(dayKey)!.push(parseExerciseItem(ex, idx));
         });
 
         normalizedDays = Array.from(dayMap.entries()).map(([dayName, exercises]) => ({
@@ -296,16 +330,7 @@ RECUERDA: La estructura de respuesta DEBE tener la propiedad "days" con cada dí
         normalizedDays = [
           {
             dayName: 'Día 1: Entrenamiento',
-            exercises: rawExercises.map((ex: any) => ({
-              nombre: ex.nombre || ex.name || 'Ejercicio',
-              grupoMuscular: ex.grupoMuscular || ex.muscleGroup || 'Cuerpo Completo',
-              series: Array.isArray(ex.series || ex.sets)
-                ? (ex.series || ex.sets).map((s: any) => ({
-                    reps: Number(s.reps || s.repeticiones || 10),
-                    peso: Number(s.peso || s.weight || 0),
-                  }))
-                : [{ reps: 10, peso: 0 }],
-            })),
+            exercises: rawExercises.map((ex: any, idx: number) => parseExerciseItem(ex, idx)),
           },
         ];
       }
