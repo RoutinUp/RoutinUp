@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Dumbbell, User } from 'lucide-react';
 import { APP_CONFIG } from '../../config/app.config';
@@ -22,9 +22,14 @@ export const Header: React.FC<HeaderProps> = () => {
             <Dumbbell className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-base font-black tracking-tight text-white block leading-none">
-              {APP_CONFIG.name}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-base font-black tracking-tight text-white block leading-none">
+                {APP_CONFIG.name}
+              </span>
+              <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 tracking-wider leading-none shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                BETA
+              </span>
+            </div>
             <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest block mt-0.5">
               Pro Fitness
             </span>

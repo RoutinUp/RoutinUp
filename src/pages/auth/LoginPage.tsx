@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../../services/auth.service';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -217,6 +217,10 @@ export const LoginPage: React.FC = () => {
             Crear cuenta gratis
           </Link>
         </div>
+      </div>
+
+      <div className="text-center mt-5 text-[11px] text-gray-500/50 font-mono tracking-wider select-none">
+        v{APP_CONFIG.version}
       </div>
     </div>
   );

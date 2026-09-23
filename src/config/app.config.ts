@@ -24,7 +24,7 @@ export const APP_CONFIG: AppBrandConfig = {
   shortName: 'RoutinUP',
   tagline: 'Entrena con foco, supera tus límites',
   description: 'Aplicación mobile-first para crear, gestionar y ejecutar rutinas de gimnasio con seguimiento inteligente.',
-  version: '1.0.0',
+  version: '0.1.0-beta',
   defaultWeightUnit: 'kg',
   weightIncrements: [1, 1.25, 2.5, 5],
   defaultRestSeconds: 90,

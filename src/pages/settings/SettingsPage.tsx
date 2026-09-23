@@ -212,12 +212,22 @@ export const SettingsPage: React.FC = () => {
 
       {/* Información de Marca Centralizada */}
       <div className="p-4 rounded-3xl bg-gym-card border border-gym-border/80 space-y-2 text-center">
-        <h4 className="text-sm font-black text-white">{APP_CONFIG.name}</h4>
+        <div className="flex items-center justify-center gap-2">
+          <h4 className="text-sm font-black text-white">{APP_CONFIG.name}</h4>
+          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 tracking-wider">
+            BETA
+          </span>
+        </div>
         <p className="text-xs text-gray-400">{APP_CONFIG.description}</p>
-        <div className="text-[10px] text-gray-500 pt-1">
-          Versión {APP_CONFIG.version} · Producción Supabase
+        <div className="text-[10px] text-gray-500 pt-1 font-mono">
+          v{APP_CONFIG.version} · Producción Supabase
         </div>
       </div>
+
+      {/* Footer discreto con la versión */}
+      <footer className="text-center pt-1 pb-4 text-[11px] text-gray-500/60 font-mono tracking-wider select-none">
+        {APP_CONFIG.name} v{APP_CONFIG.version}
+      </footer>
 
       {/* Modal Editar Perfil */}
       <Modal
