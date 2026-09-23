@@ -34,6 +34,9 @@ import {
   AlertCircle,
   CheckCircle2,
   HelpCircle,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 type MuscleFilterCategory =
@@ -196,6 +199,7 @@ export const RoutineEditorPage: React.FC = () => {
 
   // Modal para seleccionar ejercicio
   const [isSelectExerciseModalOpen, setIsSelectExerciseModalOpen] = useState(false);
+  const [replacingExerciseIndex, setReplacingExerciseIndex] = useState<number | null>(null);
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [selectedMuscleCategory, setSelectedMuscleCategory] =
     useState<MuscleFilterCategory>('todos');
@@ -358,6 +362,32 @@ export const RoutineEditorPage: React.FC = () => {
     const currentDay = days[activeDayIndex];
     if (!currentDay) return;
 
+    if (replacingExerciseIndex !== null) {
+      const targetIdx = replacingExerciseIndex;
+      setDays((prevDays) =>
+        prevDays.map((day, dIdx) => {
+          if (dIdx !== activeDayIndex) return day;
+          const currentEx = day.exercises[targetIdx];
+          if (!currentEx) return day;
+
+          const updatedExercises = [...day.exercises];
+          updatedExercises[targetIdx] = {
+            ...currentEx,
+            exerciseId: exercise.id,
+            exercise,
+          };
+          return {
+            ...day,
+            exercises: updatedExercises,
+          };
+        })
+      );
+      setReplacingExerciseIndex(null);
+      setIsSelectExerciseModalOpen(false);
+      setExerciseSearch('');
+      return;
+    }
+
     const defaultSets = 3;
     const defaultRepsMin = 8;
     const defaultRepsMax = 10;
@@ -389,11 +419,48 @@ export const RoutineEditorPage: React.FC = () => {
       setsConfig: initialSetsConfig,
     };
 
-    const updated = [...days];
-    updated[activeDayIndex].exercises.push(newExercise);
-    setDays(updated);
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const newExercises = [...day.exercises, newExercise];
+        return {
+          ...day,
+          exercises: newExercises.map((ex, orderIdx) => ({
+            ...ex,
+            exerciseOrder: orderIdx + 1,
+          })),
+        };
+      })
+    );
     setIsSelectExerciseModalOpen(false);
     setExerciseSearch('');
+  };
+
+  const handleOpenReplaceModal = (exIndex: number) => {
+    setReplacingExerciseIndex(exIndex);
+    setIsSelectExerciseModalOpen(true);
+  };
+
+  const handleMoveExercise = (exIndex: number, direction: 'up' | 'down') => {
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const targetIndex = direction === 'up' ? exIndex - 1 : exIndex + 1;
+        if (targetIndex < 0 || targetIndex >= day.exercises.length) return day;
+
+        const reordered = [...day.exercises];
+        const [moved] = reordered.splice(exIndex, 1);
+        reordered.splice(targetIndex, 0, moved);
+
+        return {
+          ...day,
+          exercises: reordered.map((ex, idx) => ({
+            ...ex,
+            exerciseOrder: idx + 1,
+          })),
+        };
+      })
+    );
   };
 
   const handleUpdateExerciseConfig = (
@@ -401,21 +468,38 @@ export const RoutineEditorPage: React.FC = () => {
     field: keyof WorkoutDayExercise,
     value: any
   ) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (currentDay && currentDay.exercises[exIndex]) {
-      (currentDay.exercises[exIndex] as any)[field] = value;
-      setDays(updated);
-    }
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const updatedExercises = [...day.exercises];
+        if (updatedExercises[exIndex]) {
+          updatedExercises[exIndex] = {
+            ...updatedExercises[exIndex],
+            [field]: value,
+          };
+        }
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   const handleRemoveExercise = (exIndex: number) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (currentDay) {
-      currentDay.exercises = currentDay.exercises.filter((_, i) => i !== exIndex);
-      setDays(updated);
-    }
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const filtered = day.exercises.filter((_, i) => i !== exIndex);
+        return {
+          ...day,
+          exercises: filtered.map((ex, orderIdx) => ({
+            ...ex,
+            exerciseOrder: orderIdx + 1,
+          })),
+        };
+      })
+    );
   };
 
   // --- Alternar modo simple vs. modo desglosado por serie ---
@@ -427,166 +511,243 @@ export const RoutineEditorPage: React.FC = () => {
     }));
 
     if (!willBeCustom) {
-      const updated = [...days];
-      const currentDay = updated[activeDayIndex];
-      if (currentDay && currentDay.exercises[exIndex]) {
-        const ex = currentDay.exercises[exIndex];
-        const sets = ensureSetsConfig(ex);
-        const uniformWeight = sets[0]?.targetWeight ?? ex.targetWeight ?? 0;
-        const uniformRepsMin =
-          sets[0]?.targetRepsMin ?? sets[0]?.targetReps ?? ex.targetRepsMin ?? 8;
-        const uniformRepsMax =
-          sets[0]?.targetRepsMax ?? sets[0]?.targetReps ?? ex.targetRepsMax ?? 10;
-        ex.targetWeight = uniformWeight;
-        ex.targetRepsMin = uniformRepsMin;
-        ex.targetRepsMax = uniformRepsMax;
-        ex.targetSets = sets.length;
-        ex.setsConfig = sets.map((s) => ({
-          ...s,
-          targetWeight: uniformWeight,
-          targetRepsMin: uniformRepsMin,
-          targetRepsMax: uniformRepsMax,
-          targetReps: uniformRepsMax,
-        }));
-        setDays(updated);
-      }
+      setDays((prevDays) =>
+        prevDays.map((day, dIdx) => {
+          if (dIdx !== activeDayIndex) return day;
+          const updatedExercises = [...day.exercises];
+          const ex = updatedExercises[exIndex];
+          if (!ex) return day;
+
+          const sets = ensureSetsConfig(ex);
+          const uniformWeight = sets[0]?.targetWeight ?? ex.targetWeight ?? 0;
+          const uniformRepsMin =
+            sets[0]?.targetRepsMin ?? sets[0]?.targetReps ?? ex.targetRepsMin ?? 8;
+          const uniformRepsMax =
+            sets[0]?.targetRepsMax ?? sets[0]?.targetReps ?? ex.targetRepsMax ?? 10;
+
+          updatedExercises[exIndex] = {
+            ...ex,
+            targetWeight: uniformWeight,
+            targetRepsMin: uniformRepsMin,
+            targetRepsMax: uniformRepsMax,
+            targetSets: sets.length,
+            setsConfig: sets.map((s) => ({
+              ...s,
+              targetWeight: uniformWeight,
+              targetRepsMin: uniformRepsMin,
+              targetRepsMax: uniformRepsMax,
+              targetReps: uniformRepsMax,
+            })),
+          };
+
+          return {
+            ...day,
+            exercises: updatedExercises,
+          };
+        })
+      );
     }
   };
 
   // --- Handlers para MODO SIMPLE (peso y repeticiones uniformes) ---
   const handleSimpleSetsChange = (exIndex: number, newCount: number) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (!currentDay || !currentDay.exercises[exIndex]) return;
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const ex = day.exercises[exIndex];
+        if (!ex) return day;
 
-    const ex = currentDay.exercises[exIndex];
-    const safeCount = Math.max(1, newCount);
-    ex.targetSets = safeCount;
+        const safeCount = Math.max(1, newCount);
+        const currentSets = ensureSetsConfig(ex);
+        const baseWeight = ex.targetWeight || (currentSets[0]?.targetWeight ?? 0);
+        const baseRepsMin = ex.targetRepsMin || (currentSets[0]?.targetRepsMin ?? 8);
+        const baseRepsMax = ex.targetRepsMax || (currentSets[0]?.targetRepsMax ?? 10);
 
-    const currentSets = ensureSetsConfig(ex);
-    const baseWeight = ex.targetWeight || (currentSets[0]?.targetWeight ?? 0);
-    const baseRepsMin = ex.targetRepsMin || (currentSets[0]?.targetRepsMin ?? 8);
-    const baseRepsMax = ex.targetRepsMax || (currentSets[0]?.targetRepsMax ?? 10);
+        const nextSets: RoutineSetDetail[] = Array.from({ length: safeCount }, (_, idx) => ({
+          setNumber: idx + 1,
+          targetRepsMin: currentSets[idx]?.targetRepsMin ?? baseRepsMin,
+          targetRepsMax: currentSets[idx]?.targetRepsMax ?? baseRepsMax,
+          targetReps: currentSets[idx]?.targetReps ?? baseRepsMax,
+          targetWeight: currentSets[idx]?.targetWeight ?? baseWeight,
+        }));
 
-    const nextSets: RoutineSetDetail[] = Array.from({ length: safeCount }, (_, idx) => ({
-      setNumber: idx + 1,
-      targetRepsMin: currentSets[idx]?.targetRepsMin ?? baseRepsMin,
-      targetRepsMax: currentSets[idx]?.targetRepsMax ?? baseRepsMax,
-      targetReps: currentSets[idx]?.targetReps ?? baseRepsMax,
-      targetWeight: currentSets[idx]?.targetWeight ?? baseWeight,
-    }));
+        const updatedExercises = [...day.exercises];
+        updatedExercises[exIndex] = {
+          ...ex,
+          targetSets: safeCount,
+          setsConfig: nextSets,
+        };
 
-    ex.setsConfig = nextSets;
-    setDays(updated);
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   const handleSimpleWeightChange = (exIndex: number, newWeight: number) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (!currentDay || !currentDay.exercises[exIndex]) return;
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const ex = day.exercises[exIndex];
+        if (!ex) return day;
 
-    const ex = currentDay.exercises[exIndex];
-    ex.targetWeight = newWeight;
+        const currentSets = ensureSetsConfig(ex);
+        const nextSets = currentSets.map((s) => ({
+          ...s,
+          targetWeight: newWeight,
+        }));
 
-    const currentSets = ensureSetsConfig(ex);
-    ex.setsConfig = currentSets.map((s) => ({
-      ...s,
-      targetWeight: newWeight,
-    }));
+        const updatedExercises = [...day.exercises];
+        updatedExercises[exIndex] = {
+          ...ex,
+          targetWeight: newWeight,
+          setsConfig: nextSets,
+        };
 
-    setDays(updated);
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   const handleSimpleRepsMinChange = (exIndex: number, newReps: number) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (!currentDay || !currentDay.exercises[exIndex]) return;
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const ex = day.exercises[exIndex];
+        if (!ex) return day;
 
-    const ex = currentDay.exercises[exIndex];
-    ex.targetRepsMin = newReps;
-    if (ex.targetRepsMax < newReps) {
-      ex.targetRepsMax = newReps;
-    }
+        const newMin = newReps;
+        const newMax = Math.max(ex.targetRepsMax || 10, newReps);
+        const currentSets = ensureSetsConfig(ex);
+        const nextSets = currentSets.map((s) => ({
+          ...s,
+          targetRepsMin: newMin,
+          targetRepsMax: Math.max(s.targetRepsMax ?? newMin, newMin),
+          targetReps: Math.max(s.targetRepsMax ?? newMin, newMin),
+        }));
 
-    const currentSets = ensureSetsConfig(ex);
-    ex.setsConfig = currentSets.map((s) => ({
-      ...s,
-      targetRepsMin: newReps,
-      targetRepsMax: Math.max(s.targetRepsMax ?? newReps, newReps),
-      targetReps: Math.max(s.targetRepsMax ?? newReps, newReps),
-    }));
+        const updatedExercises = [...day.exercises];
+        updatedExercises[exIndex] = {
+          ...ex,
+          targetRepsMin: newMin,
+          targetRepsMax: newMax,
+          setsConfig: nextSets,
+        };
 
-    setDays(updated);
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   const handleSimpleRepsMaxChange = (exIndex: number, newReps: number) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (!currentDay || !currentDay.exercises[exIndex]) return;
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const ex = day.exercises[exIndex];
+        if (!ex) return day;
 
-    const ex = currentDay.exercises[exIndex];
-    ex.targetRepsMax = newReps;
-    if (ex.targetRepsMin > newReps) {
-      ex.targetRepsMin = newReps;
-    }
+        const newMax = newReps;
+        const newMin = Math.min(ex.targetRepsMin || 8, newReps);
+        const currentSets = ensureSetsConfig(ex);
+        const nextSets = currentSets.map((s) => ({
+          ...s,
+          targetRepsMin: Math.min(s.targetRepsMin ?? newMax, newMax),
+          targetRepsMax: newMax,
+          targetReps: newMax,
+        }));
 
-    const currentSets = ensureSetsConfig(ex);
-    ex.setsConfig = currentSets.map((s) => ({
-      ...s,
-      targetRepsMin: Math.min(s.targetRepsMin ?? newReps, newReps),
-      targetRepsMax: newReps,
-      targetReps: newReps,
-    }));
+        const updatedExercises = [...day.exercises];
+        updatedExercises[exIndex] = {
+          ...ex,
+          targetRepsMin: newMin,
+          targetRepsMax: newMax,
+          setsConfig: nextSets,
+        };
 
-    setDays(updated);
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   // --- Handlers para MODO AVANZADO (desglose por serie) ---
   const handleAddSet = (exIndex: number) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (!currentDay || !currentDay.exercises[exIndex]) return;
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const ex = day.exercises[exIndex];
+        if (!ex) return day;
 
-    const ex = currentDay.exercises[exIndex];
-    const currentSets = ensureSetsConfig(ex);
-    const lastSet = currentSets[currentSets.length - 1];
+        const currentSets = ensureSetsConfig(ex);
+        const lastSet = currentSets[currentSets.length - 1];
 
-    const newSet: RoutineSetDetail = {
-      setNumber: currentSets.length + 1,
-      targetRepsMin: lastSet
-        ? (lastSet.targetRepsMin ?? lastSet.targetReps ?? 8)
-        : ex.targetRepsMin || 8,
-      targetRepsMax: lastSet
-        ? (lastSet.targetRepsMax ?? lastSet.targetReps ?? 10)
-        : ex.targetRepsMax || 10,
-      targetReps: lastSet
-        ? (lastSet.targetRepsMax ?? lastSet.targetReps ?? 10)
-        : ex.targetRepsMax || 10,
-      targetWeight: lastSet ? lastSet.targetWeight : ex.targetWeight || 0,
-    };
+        const newSet: RoutineSetDetail = {
+          setNumber: currentSets.length + 1,
+          targetRepsMin: lastSet
+            ? (lastSet.targetRepsMin ?? lastSet.targetReps ?? 8)
+            : ex.targetRepsMin || 8,
+          targetRepsMax: lastSet
+            ? (lastSet.targetRepsMax ?? lastSet.targetReps ?? 10)
+            : ex.targetRepsMax || 10,
+          targetReps: lastSet
+            ? (lastSet.targetRepsMax ?? lastSet.targetReps ?? 10)
+            : ex.targetRepsMax || 10,
+          targetWeight: lastSet ? lastSet.targetWeight : ex.targetWeight || 0,
+        };
 
-    const nextSets = [...currentSets, newSet];
-    ex.setsConfig = nextSets;
-    ex.targetSets = nextSets.length;
-    setDays(updated);
+        const nextSets = [...currentSets, newSet];
+        const updatedExercises = [...day.exercises];
+        updatedExercises[exIndex] = {
+          ...ex,
+          targetSets: nextSets.length,
+          setsConfig: nextSets,
+        };
+
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   const handleRemoveSet = (exIndex: number, setIdx: number) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (!currentDay || !currentDay.exercises[exIndex]) return;
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const ex = day.exercises[exIndex];
+        if (!ex) return day;
 
-    const ex = currentDay.exercises[exIndex];
-    const currentSets = ensureSetsConfig(ex);
-    if (currentSets.length <= 1) return;
+        const currentSets = ensureSetsConfig(ex);
+        if (currentSets.length <= 1) return day;
 
-    const nextSets = currentSets
-      .filter((_, idx) => idx !== setIdx)
-      .map((s, idx) => ({ ...s, setNumber: idx + 1 }));
+        const nextSets = currentSets
+          .filter((_, idx) => idx !== setIdx)
+          .map((s, idx) => ({ ...s, setNumber: idx + 1 }));
 
-    ex.setsConfig = nextSets;
-    ex.targetSets = nextSets.length;
-    setDays(updated);
+        const updatedExercises = [...day.exercises];
+        updatedExercises[exIndex] = {
+          ...ex,
+          targetSets: nextSets.length,
+          setsConfig: nextSets,
+        };
+
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   const handleUpdateSetField = (
@@ -595,63 +756,85 @@ export const RoutineEditorPage: React.FC = () => {
     field: 'targetReps' | 'targetRepsMin' | 'targetRepsMax' | 'targetWeight',
     value: number
   ) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (!currentDay || !currentDay.exercises[exIndex]) return;
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const ex = day.exercises[exIndex];
+        if (!ex) return day;
 
-    const ex = currentDay.exercises[exIndex];
-    const currentSets = [...ensureSetsConfig(ex)];
+        const currentSets = [...ensureSetsConfig(ex)];
+        if (!currentSets[setIdx]) return day;
 
-    if (currentSets[setIdx]) {
-      const set = { ...currentSets[setIdx] };
-      if (field === 'targetWeight') {
-        set.targetWeight = value;
-      } else if (field === 'targetRepsMin') {
-        set.targetRepsMin = value;
-        if ((set.targetRepsMax ?? 0) < value) {
+        const set = { ...currentSets[setIdx] };
+        if (field === 'targetWeight') {
+          set.targetWeight = value;
+        } else if (field === 'targetRepsMin') {
+          set.targetRepsMin = value;
+          if ((set.targetRepsMax ?? 0) < value) {
+            set.targetRepsMax = value;
+          }
+          set.targetReps = set.targetRepsMax ?? value;
+        } else if (field === 'targetRepsMax') {
+          set.targetRepsMax = value;
+          if ((set.targetRepsMin ?? value) > value) {
+            set.targetRepsMin = value;
+          }
+          set.targetReps = value;
+        } else if (field === 'targetReps') {
+          set.targetReps = value;
+          set.targetRepsMin = value;
           set.targetRepsMax = value;
         }
-        set.targetReps = set.targetRepsMax ?? value;
-      } else if (field === 'targetRepsMax') {
-        set.targetRepsMax = value;
-        if ((set.targetRepsMin ?? value) > value) {
-          set.targetRepsMin = value;
-        }
-        set.targetReps = value;
-      } else if (field === 'targetReps') {
-        set.targetReps = value;
-        set.targetRepsMin = value;
-        set.targetRepsMax = value;
-      }
 
-      currentSets[setIdx] = set;
-      ex.setsConfig = currentSets;
+        currentSets[setIdx] = set;
 
-      if (setIdx === 0) {
-        if (field === 'targetWeight') ex.targetWeight = value;
-        if (field === 'targetRepsMin') ex.targetRepsMin = value;
-        if (field === 'targetRepsMax') {
-          ex.targetRepsMax = value;
+        const updatedExercises = [...day.exercises];
+        const updatedEx = {
+          ...ex,
+          setsConfig: currentSets,
+        };
+
+        if (setIdx === 0) {
+          if (field === 'targetWeight') updatedEx.targetWeight = value;
+          if (field === 'targetRepsMin') updatedEx.targetRepsMin = value;
+          if (field === 'targetRepsMax') updatedEx.targetRepsMax = value;
         }
-      }
-      setDays(updated);
-    }
+
+        updatedExercises[exIndex] = updatedEx;
+
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   const handleCopyWeightToAll = (exIndex: number, weight: number) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (!currentDay || !currentDay.exercises[exIndex]) return;
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const ex = day.exercises[exIndex];
+        if (!ex) return day;
 
-    const ex = currentDay.exercises[exIndex];
-    const currentSets = ensureSetsConfig(ex).map((s) => ({
-      ...s,
-      targetWeight: weight,
-    }));
+        const currentSets = ensureSetsConfig(ex).map((s) => ({
+          ...s,
+          targetWeight: weight,
+        }));
 
-    ex.setsConfig = currentSets;
-    ex.targetWeight = weight;
-    setDays(updated);
+        const updatedExercises = [...day.exercises];
+        updatedExercises[exIndex] = {
+          ...ex,
+          targetWeight: weight,
+          setsConfig: currentSets,
+        };
+
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   const handleCopyRepsToAll = (
@@ -659,22 +842,33 @@ export const RoutineEditorPage: React.FC = () => {
     repsMin: number,
     repsMax: number
   ) => {
-    const updated = [...days];
-    const currentDay = updated[activeDayIndex];
-    if (!currentDay || !currentDay.exercises[exIndex]) return;
+    setDays((prevDays) =>
+      prevDays.map((day, dIdx) => {
+        if (dIdx !== activeDayIndex) return day;
+        const ex = day.exercises[exIndex];
+        if (!ex) return day;
 
-    const ex = currentDay.exercises[exIndex];
-    const currentSets = ensureSetsConfig(ex).map((s) => ({
-      ...s,
-      targetRepsMin: repsMin,
-      targetRepsMax: repsMax,
-      targetReps: repsMax,
-    }));
+        const currentSets = ensureSetsConfig(ex).map((s) => ({
+          ...s,
+          targetRepsMin: repsMin,
+          targetRepsMax: repsMax,
+          targetReps: repsMax,
+        }));
 
-    ex.setsConfig = currentSets;
-    ex.targetRepsMin = repsMin;
-    ex.targetRepsMax = repsMax;
-    setDays(updated);
+        const updatedExercises = [...day.exercises];
+        updatedExercises[exIndex] = {
+          ...ex,
+          targetRepsMin: repsMin,
+          targetRepsMax: repsMax,
+          setsConfig: currentSets,
+        };
+
+        return {
+          ...day,
+          exercises: updatedExercises,
+        };
+      })
+    );
   };
 
   // --- GENERACIÓN CON IA (GEMINI) ---
@@ -851,12 +1045,15 @@ export const RoutineEditorPage: React.FC = () => {
     try {
       setIsSaving(true);
 
-      const normalizedDays: WorkoutDay[] = days.map((day) => ({
+      const normalizedDays: WorkoutDay[] = days.map((day, dayIdx) => ({
         ...day,
-        exercises: day.exercises.map((ex) => {
+        dayOrder: day.dayOrder || dayIdx + 1,
+        exercises: day.exercises.map((ex, exIdx) => {
           const sets = ensureSetsConfig(ex);
           return {
             ...ex,
+            exercise: ex.exercise || allExercises.find((e) => e.id === ex.exerciseId),
+            exerciseOrder: exIdx + 1,
             targetSets: sets.length,
             targetWeight: sets[0]?.targetWeight ?? ex.targetWeight ?? 0,
             targetRepsMin:
@@ -1247,11 +1444,33 @@ export const RoutineEditorPage: React.FC = () => {
                             </div>
 
                             <div className="flex items-center gap-1.5 flex-shrink-0">
+                              {/* Controles de Reordenamiento: Subir / Bajar */}
+                              <div className="flex items-center bg-slate-900 border border-gym-border/80 rounded-xl p-0.5 shadow-sm">
+                                <button
+                                  type="button"
+                                  disabled={exIdx === 0}
+                                  onClick={() => handleMoveExercise(exIdx, 'up')}
+                                  className="p-1 rounded-lg text-gray-400 hover:text-white disabled:opacity-20 disabled:hover:text-gray-400 transition-colors"
+                                  title="Subir posición del ejercicio"
+                                >
+                                  <ArrowUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={exIdx === currentDay.exercises.length - 1}
+                                  onClick={() => handleMoveExercise(exIdx, 'down')}
+                                  className="p-1 rounded-lg text-gray-400 hover:text-white disabled:opacity-20 disabled:hover:text-gray-400 transition-colors"
+                                  title="Bajar posición del ejercicio"
+                                >
+                                  <ArrowDown className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
                               {/* Botón Toggle: Modo Simple vs Modo Avanzado Desglosado */}
                               <button
                                 type="button"
                                 onClick={() => toggleCustomSets(dayEx.id, exIdx)}
-                                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all select-none ${
+                                className={`px-2 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all select-none ${
                                   isCustom
                                     ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm'
                                     : 'bg-slate-900 text-gray-400 border border-gym-border hover:text-white hover:border-gray-500'
@@ -1273,6 +1492,17 @@ export const RoutineEditorPage: React.FC = () => {
                                 )}
                               </button>
 
+                              {/* Botón Cambiar / Reemplazar Ejercicio */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenReplaceModal(exIdx)}
+                                className="p-2 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-colors flex-shrink-0"
+                                title="Cambiar o reemplazar este ejercicio manteniendo series y repeticiones"
+                              >
+                                <ArrowLeftRight className="w-4 h-4" />
+                              </button>
+
+                              {/* Botón Eliminar Ejercicio */}
                               <button
                                 type="button"
                                 onClick={() => handleRemoveExercise(exIdx)}
@@ -1597,11 +1827,27 @@ export const RoutineEditorPage: React.FC = () => {
         onClose={() => {
           setIsSelectExerciseModalOpen(false);
           setExerciseSearch('');
+          setReplacingExerciseIndex(null);
         }}
-        title="Seleccionar Ejercicio"
+        title={
+          replacingExerciseIndex !== null
+            ? 'Cambiar / Reemplazar Ejercicio'
+            : 'Seleccionar Ejercicio'
+        }
         maxWidth="md"
       >
         <div className="space-y-3.5">
+          {replacingExerciseIndex !== null && (
+            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-start gap-2.5">
+              <ArrowLeftRight className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <span className="font-bold block text-white">Sustituir ejercicio</span>
+                <span className="text-[11px] text-gray-300">
+                  Selecciona el nuevo ejercicio del catálogo. Se conservarán las series, repeticiones, peso y descansos ya configurados.
+                </span>
+              </div>
+            </div>
+          )}
           {/* Buscador */}
           <div className="relative">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />

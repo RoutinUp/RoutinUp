@@ -779,11 +779,13 @@ export const routineService = {
     const isUuid = (val?: string) =>
       Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
 
-    // Guardar Días y ejercicios
+    const savedDayIds: string[] = [];
+
+    // Guardar Días y TODOS sus ejercicios correspondientes
     for (let dayIdx = 0; dayIdx < routine.days.length; dayIdx++) {
       const day = routine.days[dayIdx];
       const isDayNew = day.id.startsWith('day-');
-      const { data: dayData } = await supabase
+      const { data: dayData, error: dayError } = await supabase
         .from('workout_days')
         .upsert({
           id: isDayNew ? undefined : day.id,
@@ -794,121 +796,197 @@ export const routineService = {
         .select()
         .single();
 
-      if (dayData) {
-        day.id = dayData.id;
-        for (let exIdx = 0; exIdx < day.exercises.length; exIdx++) {
-          const ex = day.exercises[exIdx];
-          const isExNew = ex.id.startsWith('d-ex-');
+      if (dayError || !dayData) {
+        console.warn(`Error al guardar día "${day.name}" en Supabase:`, dayError);
+        continue;
+      }
 
-          // Resolver UUID de Supabase para el ejercicio
-          const seedInfo = SEED_EXERCISES.find(
-            (s) => s.id === ex.exerciseId || s.slug === ex.exerciseId
+      day.id = dayData.id;
+      savedDayIds.push(dayData.id);
+
+      const savedExerciseIds: string[] = [];
+
+      for (let exIdx = 0; exIdx < day.exercises.length; exIdx++) {
+        const ex = day.exercises[exIdx];
+        const isExNew = ex.id.startsWith('d-ex-');
+
+        // Resolver UUID de Supabase para el ejercicio
+        const seedInfo = SEED_EXERCISES.find(
+          (s) => s.id === ex.exerciseId || s.slug === ex.exerciseId
+        );
+
+        let resolvedExerciseId: string | null = isUuid(ex.exerciseId) ? ex.exerciseId : null;
+
+        if (!resolvedExerciseId) {
+          const matched = dbExercises.find(
+            (d) =>
+              d.id === ex.exerciseId ||
+              (d.slug && (d.slug === ex.exerciseId || (ex.exercise && d.slug === ex.exercise.slug) || (seedInfo && d.slug === seedInfo.slug))) ||
+              (d.name && ((ex.exercise && d.name.toLowerCase().trim() === ex.exercise.name.toLowerCase().trim()) || (seedInfo && d.name.toLowerCase().trim() === seedInfo.name.toLowerCase().trim())))
           );
+          if (matched && isUuid(matched.id)) {
+            resolvedExerciseId = matched.id;
+          }
+        }
 
-          let resolvedExerciseId: string | null = isUuid(ex.exerciseId) ? ex.exerciseId : null;
+        // Si el ejercicio aún no existe en Supabase, crearlo con is_custom=true y created_by=userId para cumplir con RLS
+        if (!resolvedExerciseId) {
+          const exName = ex.exercise?.name || seedInfo?.name || 'Ejercicio';
+          const exSlug = ex.exercise?.slug || seedInfo?.slug || exName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          const exMuscle = ex.exercise?.mainMuscleGroup || seedInfo?.mainMuscleGroup || 'cuerpo_completo';
+          const exEquip = ex.exercise?.equipment || seedInfo?.equipment || 'otro';
 
-          if (!resolvedExerciseId) {
-            const matched = dbExercises.find(
-              (d) =>
-                d.id === ex.exerciseId ||
-                (seedInfo && (d.slug === seedInfo.slug || d.name.toLowerCase() === seedInfo.name.toLowerCase()))
-            );
-            if (matched && isUuid(matched.id)) {
-              resolvedExerciseId = matched.id;
+          try {
+            const { data: createdEx, error: insErr } = await supabase
+              .from('exercises')
+              .insert({
+                name: exName,
+                slug: exSlug,
+                description: ex.exercise?.description || seedInfo?.description || '',
+                main_muscle_group: exMuscle,
+                secondary_muscles: ex.exercise?.secondaryMuscles || seedInfo?.secondaryMuscles || [],
+                equipment: exEquip,
+                exercise_type: ex.exercise?.exerciseType || seedInfo?.exerciseType || 'compuesto',
+                instructions: ex.exercise?.instructions || seedInfo?.instructions || [],
+                technique_tips: ex.exercise?.techniqueTips || seedInfo?.techniqueTips || '',
+                difficulty_level: ex.exercise?.difficultyLevel || seedInfo?.difficultyLevel || 'intermedio',
+                image_url: ex.exercise?.imageUrl || seedInfo?.imageUrl || '',
+                is_custom: true,
+                created_by: userId,
+              })
+              .select('id')
+              .single();
+
+            if (createdEx?.id) {
+              resolvedExerciseId = createdEx.id;
+              dbExercises.push({
+                id: createdEx.id,
+                name: exName,
+                slug: exSlug,
+                description: ex.exercise?.description || seedInfo?.description || '',
+                mainMuscleGroup: exMuscle,
+                secondaryMuscles: ex.exercise?.secondaryMuscles || seedInfo?.secondaryMuscles || [],
+                equipment: exEquip,
+                exerciseType: ex.exercise?.exerciseType || seedInfo?.exerciseType || 'compuesto',
+                instructions: ex.exercise?.instructions || seedInfo?.instructions || [],
+                techniqueTips: ex.exercise?.techniqueTips || seedInfo?.techniqueTips || '',
+                difficultyLevel: ex.exercise?.difficultyLevel || seedInfo?.difficultyLevel || 'intermedio',
+                imageUrl: ex.exercise?.imageUrl || seedInfo?.imageUrl || '',
+                isCustom: true,
+                createdBy: userId,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              });
+            } else if (insErr) {
+              console.warn(`Error al auto-insertar ejercicio "${exName}" en Supabase:`, insErr);
             }
+          } catch (insErr) {
+            console.warn(`Excepción al insertar ejercicio "${exName}" en Supabase:`, insErr);
           }
+        }
 
-          // Si el ejercicio no existe aún en la base de datos Supabase, insertarlo para obtener su UUID
-          if (!resolvedExerciseId && seedInfo) {
-            try {
-              const { data: createdEx } = await supabase
-                .from('exercises')
-                .insert({
-                  name: seedInfo.name,
-                  slug: seedInfo.slug,
-                  description: seedInfo.description || '',
-                  main_muscle_group: seedInfo.mainMuscleGroup,
-                  secondary_muscles: seedInfo.secondaryMuscles || [],
-                  equipment: seedInfo.equipment,
-                  exercise_type: seedInfo.exerciseType,
-                  instructions: seedInfo.instructions || [],
-                  technique_tips: seedInfo.techniqueTips || '',
-                  difficulty_level: seedInfo.difficultyLevel,
-                  image_url: seedInfo.imageUrl || '',
-                  is_custom: false,
-                })
-                .select('id')
-                .single();
+        const targetExerciseId = resolvedExerciseId || (isUuid(ex.exerciseId) ? ex.exerciseId : null);
 
-              if (createdEx?.id) {
-                resolvedExerciseId = createdEx.id;
-                dbExercises.push({
-                  ...seedInfo,
-                  id: createdEx.id,
-                });
-              }
-            } catch (insErr) {
-              console.warn('Error auto-inserting exercise into Supabase:', insErr);
-            }
-          }
+        if (!targetExerciseId) {
+          console.warn(`No se pudo generar un UUID para el ejercicio "${ex.exercise?.name || ex.exerciseId}". Se mantendrá en la caché local.`);
+          continue;
+        }
 
-          const targetExerciseId = resolvedExerciseId || ex.exerciseId;
-          ex.exerciseId = targetExerciseId;
-          if (seedInfo && !ex.exercise) {
-            ex.exercise = seedInfo;
-          }
+        ex.exerciseId = targetExerciseId;
+        if (seedInfo && !ex.exercise) {
+          ex.exercise = seedInfo;
+        }
 
-          const exercisePayload: any = {
-            id: isExNew ? undefined : ex.id,
-            workout_day_id: dayData.id,
-            exercise_id: targetExerciseId,
-            exercise_order: exIdx + 1,
-            target_sets: ex.setsConfig?.length || ex.targetSets || 3,
-            target_reps_min: ex.targetRepsMin || 8,
-            target_reps_max: ex.targetRepsMax || 12,
-            target_weight: ex.targetWeight || 0,
-            rest_seconds: ex.restSeconds || 90,
-            notes: ex.notes || '',
-            sets_config: ex.setsConfig || [],
-          };
+        const exercisePayload: any = {
+          id: isExNew ? undefined : ex.id,
+          workout_day_id: dayData.id,
+          exercise_id: targetExerciseId,
+          exercise_order: exIdx + 1,
+          target_sets: ex.setsConfig?.length || ex.targetSets || 3,
+          target_reps_min: ex.targetRepsMin || 8,
+          target_reps_max: ex.targetRepsMax || 12,
+          target_weight: ex.targetWeight || 0,
+          rest_seconds: ex.restSeconds || 90,
+          notes: ex.notes || '',
+          sets_config: ex.setsConfig || [],
+        };
 
-          const { data: savedEx, error: exError } = await supabase
-            .from('workout_day_exercises')
-            .upsert(exercisePayload)
-            .select()
-            .single();
+        const { data: savedEx, error: exError } = await supabase
+          .from('workout_day_exercises')
+          .upsert(exercisePayload)
+          .select()
+          .single();
 
-          if (savedEx) {
-            ex.id = savedEx.id;
-          }
-
-          // Fallback resiliente si la columna sets_config aún no fue ejecutada en Supabase SQL Editor
-          if (exError && (exError.message?.includes('sets_config') || (exError as any).code === '42703')) {
+        if (savedEx) {
+          ex.id = savedEx.id;
+          savedExerciseIds.push(savedEx.id);
+        } else if (exError) {
+          // Fallback resiliente si la columna sets_config aún no existe en Supabase
+          if (exError.message?.includes('sets_config') || (exError as any).code === '42703') {
             delete exercisePayload.sets_config;
             const { data: retryEx } = await supabase
               .from('workout_day_exercises')
               .upsert(exercisePayload)
               .select()
               .single();
-            if (retryEx) ex.id = retryEx.id;
+            if (retryEx) {
+              ex.id = retryEx.id;
+              savedExerciseIds.push(retryEx.id);
+            }
+          } else {
+            console.warn(`Error al guardar ejercicio "${ex.exercise?.name || targetExerciseId}":`, exError);
           }
+        }
+      }
+
+      // Eliminar ejercicios huérfanos o que fueron quitados de este día
+      if (savedExerciseIds.length > 0) {
+        try {
+          await supabase
+            .from('workout_day_exercises')
+            .delete()
+            .eq('workout_day_id', dayData.id)
+            .not('id', 'in', `(${savedExerciseIds.join(',')})`);
+        } catch (delErr) {
+          console.warn('Error al limpiar ejercicios huérfanos en Supabase:', delErr);
         }
       }
     }
 
-    // Actualizar cache local
+    // Eliminar días huérfanos de la rutina en Supabase
+    if (savedDayIds.length > 0) {
+      try {
+        await supabase
+          .from('workout_days')
+          .delete()
+          .eq('routine_id', realRoutineId)
+          .not('id', 'in', `(${savedDayIds.join(',')})`);
+      } catch (delDaysErr) {
+        console.warn('Error al limpiar días huérfanos en Supabase:', delDaysErr);
+      }
+    }
+
+    // Actualizar cache local asegurando que TODOS los días y ejercicios configurados persistan
     const userKey = getUserRoutinesKey(userId);
     const stored = localStorage.getItem(userKey);
     let list: WorkoutRoutine[] = stored ? JSON.parse(stored) : [];
-    const index = list.findIndex((r) => r.id === routine.id);
+    const index = list.findIndex((r) => r.id === routine.id || r.id === realRoutineId);
+    const routineWithRealId: WorkoutRoutine = {
+      ...routine,
+      id: realRoutineId,
+      updatedAt: new Date().toISOString(),
+    };
     if (index >= 0) {
-      list[index] = { ...routine, id: realRoutineId, updatedAt: new Date().toISOString() };
+      list[index] = routineWithRealId;
     } else {
-      list.push({ ...routine, id: realRoutineId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+      list.push({
+        ...routineWithRealId,
+        createdAt: routine.createdAt || new Date().toISOString(),
+      });
     }
     localStorage.setItem(userKey, JSON.stringify(list));
 
-    return { ...routine, id: realRoutineId };
+    return routineWithRealId;
   },
 
   // Marcar una rutina como activa exclusivamente (desmarcando todas las demás)
