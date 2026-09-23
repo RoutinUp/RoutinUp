@@ -1,4 +1,4 @@
-﻿import { supabase, isSupabaseConfigured } from '../config/supabase';
+import { supabase, isSupabaseConfigured } from '../config/supabase';
 import { WorkoutSession, LoggedExercise, LoggedSet } from '../types/workout';
 import { PersonalRecord, ExerciseProgressPoint } from '../types/progress';
 
@@ -268,6 +268,52 @@ export const workoutService = {
     localStorage.setItem(userSessionsKey, JSON.stringify(list));
 
     return { session, newPRs };
+  },
+
+  // Eliminar una sesión de entrenamiento
+  async deleteWorkoutSession(sessionId: string, userId?: string): Promise<void> {
+    if (!sessionId) return;
+
+    if (isSupabaseConfigured && userId) {
+      try {
+        // En Supabase, por si no cuenta con ON DELETE CASCADE, eliminamos dependientes primero
+        const { data: exercises } = await supabase
+          .from('session_exercises')
+          .select('id')
+          .eq('session_id', sessionId);
+
+        if (exercises && exercises.length > 0) {
+          const exIds = exercises.map((e: any) => e.id);
+          await supabase.from('session_sets').delete().in('session_exercise_id', exIds);
+          await supabase.from('session_exercises').delete().eq('session_id', sessionId);
+        }
+
+        const { error } = await supabase
+          .from('workout_sessions')
+          .delete()
+          .eq('id', sessionId)
+          .eq('user_id', userId);
+
+        if (error) {
+          console.warn('Error deleting workout session from Supabase:', error);
+        }
+      } catch (err) {
+        console.warn('Exception deleting workout session in Supabase:', err);
+      }
+    }
+
+    // Actualizar almacenamiento local
+    const userSessionsKey = getUserSessionsKey(userId);
+    const stored = localStorage.getItem(userSessionsKey);
+    if (stored) {
+      try {
+        const list: WorkoutSession[] = JSON.parse(stored);
+        const filtered = list.filter((s) => s.id !== sessionId);
+        localStorage.setItem(userSessionsKey, JSON.stringify(filtered));
+      } catch (e) {
+        console.error('Error updating local sessions on delete:', e);
+      }
+    }
   },
 
   // Obtener puntos de evolución histórica para gráficos de un ejercicio

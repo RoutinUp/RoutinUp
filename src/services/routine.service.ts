@@ -9,7 +9,7 @@ const DEFAULT_PRESET_ROUTINES: WorkoutRoutine[] = [
   {
     id: 'rot-push-pull-legs',
     userId: 'default-user',
-    name: 'Push / Pull / Legs (PPL)',
+    name: 'Push / Pull / Legs (PPL - 3 Días)',
     description: 'Rutina clásica de 3 días hipertrofia dividida por patrones de movimiento.',
     isActive: true,
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -104,8 +104,20 @@ const DEFAULT_PRESET_ROUTINES: WorkoutRoutine[] = [
           {
             id: 'd-ex-7',
             workoutDayId: 'day-pull',
-            exerciseId: 'ex-biceps-01',
+            exerciseId: 'ex-hombros-05',
             exerciseOrder: 3,
+            targetSets: 3,
+            targetRepsMin: 12,
+            targetRepsMax: 15,
+            targetWeight: 20,
+            restSeconds: 60,
+            notes: 'Separar las cuerdas hacia las orejas.'
+          },
+          {
+            id: 'd-ex-8',
+            workoutDayId: 'day-pull',
+            exerciseId: 'ex-biceps-01',
+            exerciseOrder: 4,
             targetSets: 3,
             targetRepsMin: 10,
             targetRepsMax: 12,
@@ -122,7 +134,7 @@ const DEFAULT_PRESET_ROUTINES: WorkoutRoutine[] = [
         dayOrder: 3,
         exercises: [
           {
-            id: 'd-ex-8',
+            id: 'd-ex-9',
             workoutDayId: 'day-legs',
             exerciseId: 'ex-piernas-01',
             exerciseOrder: 1,
@@ -134,7 +146,7 @@ const DEFAULT_PRESET_ROUTINES: WorkoutRoutine[] = [
             notes: 'Romper paralelo con firmeza.'
           },
           {
-            id: 'd-ex-9',
+            id: 'd-ex-10',
             workoutDayId: 'day-legs',
             exerciseId: 'ex-piernas-04',
             exerciseOrder: 2,
@@ -146,16 +158,422 @@ const DEFAULT_PRESET_ROUTINES: WorkoutRoutine[] = [
             notes: 'Bisagra de cadera profunda.'
           },
           {
-            id: 'd-ex-10',
+            id: 'd-ex-11',
+            workoutDayId: 'day-legs',
+            exerciseId: 'ex-piernas-05',
+            exerciseOrder: 3,
+            targetSets: 3,
+            targetRepsMin: 12,
+            targetRepsMax: 15,
+            targetWeight: 45,
+            restSeconds: 60,
+            notes: 'Pausa de 1 segundo en la contracción.'
+          },
+          {
+            id: 'd-ex-12',
             workoutDayId: 'day-legs',
             exerciseId: 'ex-core-01',
-            exerciseOrder: 3,
+            exerciseOrder: 4,
             targetSets: 3,
             targetRepsMin: 12,
             targetRepsMax: 15,
             targetWeight: 35,
             restSeconds: 60,
             notes: 'Enrollar la columna apretando el abdomen.'
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'rot-torso-pierna-fullbody',
+    userId: 'default-user',
+    name: 'Torso / Pierna / Fullbody (3 Días)',
+    description: 'Equilibrio perfecto de frecuencia y volumen muscular en 3 sesiones semanales.',
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    days: [
+      {
+        id: 'day-tpf-torso',
+        routineId: 'rot-torso-pierna-fullbody',
+        name: 'Día 1: Torso (Pecho, Espalda y Hombros)',
+        dayOrder: 1,
+        exercises: [
+          {
+            id: 'd-ex-13',
+            workoutDayId: 'day-tpf-torso',
+            exerciseId: 'ex-pecho-01',
+            exerciseOrder: 1,
+            targetSets: 4,
+            targetRepsMin: 8,
+            targetRepsMax: 10,
+            targetWeight: 75,
+            restSeconds: 120,
+            notes: 'Control en el descenso.'
+          },
+          {
+            id: 'd-ex-14',
+            workoutDayId: 'day-tpf-torso',
+            exerciseId: 'ex-espalda-02',
+            exerciseOrder: 2,
+            targetSets: 4,
+            targetRepsMin: 8,
+            targetRepsMax: 10,
+            targetWeight: 60,
+            restSeconds: 90,
+            notes: 'Tracción vertical llevando codos a los costados.'
+          },
+          {
+            id: 'd-ex-15',
+            workoutDayId: 'day-tpf-torso',
+            exerciseId: 'ex-hombros-01',
+            exerciseOrder: 3,
+            targetSets: 3,
+            targetRepsMin: 8,
+            targetRepsMax: 10,
+            targetWeight: 45,
+            restSeconds: 90,
+            notes: 'Glúteos apretados y empuje vertical estricto.'
+          },
+          {
+            id: 'd-ex-16',
+            workoutDayId: 'day-tpf-torso',
+            exerciseId: 'ex-espalda-05',
+            exerciseOrder: 4,
+            targetSets: 3,
+            targetRepsMin: 10,
+            targetRepsMax: 12,
+            targetWeight: 55,
+            restSeconds: 60,
+            notes: 'Jalar al esternón bajo apretando omóplatos.'
+          },
+          {
+            id: 'd-ex-17',
+            workoutDayId: 'day-tpf-torso',
+            exerciseId: 'ex-triceps-01',
+            exerciseOrder: 5,
+            targetSets: 3,
+            targetRepsMin: 10,
+            targetRepsMax: 12,
+            targetWeight: 25,
+            restSeconds: 60,
+            notes: 'Codos cerrados durante el recorrido.'
+          }
+        ]
+      },
+      {
+        id: 'day-tpf-pierna',
+        routineId: 'rot-torso-pierna-fullbody',
+        name: 'Día 2: Piernas y Core',
+        dayOrder: 2,
+        exercises: [
+          {
+            id: 'd-ex-18',
+            workoutDayId: 'day-tpf-pierna',
+            exerciseId: 'ex-piernas-01',
+            exerciseOrder: 1,
+            targetSets: 4,
+            targetRepsMin: 6,
+            targetRepsMax: 8,
+            targetWeight: 90,
+            restSeconds: 120,
+            notes: 'Buena profundidad y estabilidad plantar.'
+          },
+          {
+            id: 'd-ex-19',
+            workoutDayId: 'day-tpf-pierna',
+            exerciseId: 'ex-piernas-03',
+            exerciseOrder: 2,
+            targetSets: 3,
+            targetRepsMin: 10,
+            targetRepsMax: 12,
+            targetWeight: 140,
+            restSeconds: 90,
+            notes: 'Pies al centro de la plataforma.'
+          },
+          {
+            id: 'd-ex-20',
+            workoutDayId: 'day-tpf-pierna',
+            exerciseId: 'ex-piernas-06',
+            exerciseOrder: 3,
+            targetSets: 3,
+            targetRepsMin: 10,
+            targetRepsMax: 12,
+            targetWeight: 40,
+            restSeconds: 60,
+            notes: 'Caderas pegadas al banco en todo momento.'
+          },
+          {
+            id: 'd-ex-21',
+            workoutDayId: 'day-tpf-pierna',
+            exerciseId: 'ex-piernas-10',
+            exerciseOrder: 4,
+            targetSets: 4,
+            targetRepsMin: 12,
+            targetRepsMax: 15,
+            targetWeight: 50,
+            restSeconds: 45,
+            notes: 'Pausa de 2 segundos arriba en máxima flexión.'
+          },
+          {
+            id: 'd-ex-22',
+            workoutDayId: 'day-tpf-pierna',
+            exerciseId: 'ex-core-02',
+            exerciseOrder: 5,
+            targetSets: 3,
+            targetRepsMin: 10,
+            targetRepsMax: 12,
+            targetWeight: 0,
+            restSeconds: 60,
+            notes: 'Evitar el balanceo, elevar la pelvis.'
+          }
+        ]
+      },
+      {
+        id: 'day-tpf-fullbody',
+        routineId: 'rot-torso-pierna-fullbody',
+        name: 'Día 3: Fullbody (Cuerpo Completo)',
+        dayOrder: 3,
+        exercises: [
+          {
+            id: 'd-ex-23',
+            workoutDayId: 'day-tpf-fullbody',
+            exerciseId: 'ex-espalda-07',
+            exerciseOrder: 1,
+            targetSets: 3,
+            targetRepsMin: 5,
+            targetRepsMax: 6,
+            targetWeight: 110,
+            restSeconds: 150,
+            notes: 'Espalda neutra y empuje contra el suelo.'
+          },
+          {
+            id: 'd-ex-24',
+            workoutDayId: 'day-tpf-fullbody',
+            exerciseId: 'ex-pecho-04',
+            exerciseOrder: 2,
+            targetSets: 3,
+            targetRepsMin: 8,
+            targetRepsMax: 10,
+            targetWeight: 24,
+            restSeconds: 90,
+            notes: 'Apertura de codos a 45 grados.'
+          },
+          {
+            id: 'd-ex-25',
+            workoutDayId: 'day-tpf-fullbody',
+            exerciseId: 'ex-espalda-04',
+            exerciseOrder: 3,
+            targetSets: 3,
+            targetRepsMin: 10,
+            targetRepsMax: 12,
+            targetWeight: 26,
+            restSeconds: 60,
+            notes: 'Traccionar hacia la cadera.'
+          },
+          {
+            id: 'd-ex-26',
+            workoutDayId: 'day-tpf-fullbody',
+            exerciseId: 'ex-biceps-03',
+            exerciseOrder: 4,
+            targetSets: 3,
+            targetRepsMin: 10,
+            targetRepsMax: 12,
+            targetWeight: 14,
+            restSeconds: 60,
+            notes: 'Agarre neutro estricto.'
+          },
+          {
+            id: 'd-ex-27',
+            workoutDayId: 'day-tpf-fullbody',
+            exerciseId: 'ex-core-03',
+            exerciseOrder: 5,
+            targetSets: 3,
+            targetRepsMin: 45,
+            targetRepsMax: 60,
+            targetWeight: 0,
+            restSeconds: 60,
+            notes: 'Tensión isométrica continua en todo el core.'
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'rot-fuerza-5x5',
+    userId: 'default-user',
+    name: 'Fuerza Básica 5x5 (3 Días)',
+    description: 'Rutina clásica de fuerza máxima basada en los levantamientos compuestos elementales.',
+    isActive: true,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    days: [
+      {
+        id: 'day-5x5-a',
+        routineId: 'rot-fuerza-5x5',
+        name: 'Día 1: Fuerza A (Sentadilla, Banca, Remo)',
+        dayOrder: 1,
+        exercises: [
+          {
+            id: 'd-ex-28',
+            workoutDayId: 'day-5x5-a',
+            exerciseId: 'ex-piernas-01',
+            exerciseOrder: 1,
+            targetSets: 5,
+            targetRepsMin: 5,
+            targetRepsMax: 5,
+            targetWeight: 100,
+            restSeconds: 180,
+            notes: '5 series pesadas manteniendo técnica estricta.'
+          },
+          {
+            id: 'd-ex-29',
+            workoutDayId: 'day-5x5-a',
+            exerciseId: 'ex-pecho-01',
+            exerciseOrder: 2,
+            targetSets: 5,
+            targetRepsMin: 5,
+            targetRepsMax: 5,
+            targetWeight: 85,
+            restSeconds: 180,
+            notes: 'Pausa breve en el pecho antes de empujar.'
+          },
+          {
+            id: 'd-ex-30',
+            workoutDayId: 'day-5x5-a',
+            exerciseId: 'ex-espalda-03',
+            exerciseOrder: 3,
+            targetSets: 5,
+            targetRepsMin: 5,
+            targetRepsMax: 5,
+            targetWeight: 75,
+            restSeconds: 180,
+            notes: 'Tronco firme paralelo al suelo.'
+          },
+          {
+            id: 'd-ex-31',
+            workoutDayId: 'day-5x5-a',
+            exerciseId: 'ex-core-01',
+            exerciseOrder: 4,
+            targetSets: 3,
+            targetRepsMin: 12,
+            targetRepsMax: 15,
+            targetWeight: 35,
+            restSeconds: 60,
+            notes: 'Trabajo accesorio de estabilidad abdominal.'
+          }
+        ]
+      },
+      {
+        id: 'day-5x5-b',
+        routineId: 'rot-fuerza-5x5',
+        name: 'Día 2: Fuerza B (Sentadilla, Militar, Peso Muerto)',
+        dayOrder: 2,
+        exercises: [
+          {
+            id: 'd-ex-32',
+            workoutDayId: 'day-5x5-b',
+            exerciseId: 'ex-piernas-01',
+            exerciseOrder: 1,
+            targetSets: 5,
+            targetRepsMin: 5,
+            targetRepsMax: 5,
+            targetWeight: 100,
+            restSeconds: 180,
+            notes: 'Mismo peso de trabajo para consolidar adaptación neuromuscular.'
+          },
+          {
+            id: 'd-ex-33',
+            workoutDayId: 'day-5x5-b',
+            exerciseId: 'ex-hombros-01',
+            exerciseOrder: 2,
+            targetSets: 5,
+            targetRepsMin: 5,
+            targetRepsMax: 5,
+            targetWeight: 55,
+            restSeconds: 180,
+            notes: 'Bloquear los codos arriba con la cabeza adelantada.'
+          },
+          {
+            id: 'd-ex-34',
+            workoutDayId: 'day-5x5-b',
+            exerciseId: 'ex-espalda-07',
+            exerciseOrder: 3,
+            targetSets: 1,
+            targetRepsMin: 5,
+            targetRepsMax: 5,
+            targetWeight: 130,
+            restSeconds: 180,
+            notes: '1 serie efectiva pesada de máxima intensidad.'
+          },
+          {
+            id: 'd-ex-35',
+            workoutDayId: 'day-5x5-b',
+            exerciseId: 'ex-triceps-04',
+            exerciseOrder: 4,
+            targetSets: 3,
+            targetRepsMin: 8,
+            targetRepsMax: 10,
+            targetWeight: 0,
+            restSeconds: 90,
+            notes: 'Fondos con peso corporal o lastre ligero.'
+          }
+        ]
+      },
+      {
+        id: 'day-5x5-c',
+        routineId: 'rot-fuerza-5x5',
+        name: 'Día 3: Fuerza C (Sentadilla, Banca, Dominadas)',
+        dayOrder: 3,
+        exercises: [
+          {
+            id: 'd-ex-36',
+            workoutDayId: 'day-5x5-c',
+            exerciseId: 'ex-piernas-01',
+            exerciseOrder: 1,
+            targetSets: 5,
+            targetRepsMin: 5,
+            targetRepsMax: 5,
+            targetWeight: 100,
+            restSeconds: 180,
+            notes: 'Cierre semanal de sentadillas de alta carga.'
+          },
+          {
+            id: 'd-ex-37',
+            workoutDayId: 'day-5x5-c',
+            exerciseId: 'ex-pecho-01',
+            exerciseOrder: 2,
+            targetSets: 5,
+            targetRepsMin: 5,
+            targetRepsMax: 5,
+            targetWeight: 85,
+            restSeconds: 180,
+            notes: 'Empujar con agresividad concéntrica.'
+          },
+          {
+            id: 'd-ex-38',
+            workoutDayId: 'day-5x5-c',
+            exerciseId: 'ex-espalda-01',
+            exerciseOrder: 3,
+            targetSets: 5,
+            targetRepsMin: 5,
+            targetRepsMax: 5,
+            targetWeight: 0,
+            restSeconds: 150,
+            notes: 'Dominadas con recorrido completo hasta pasar la barbilla.'
+          },
+          {
+            id: 'd-ex-39',
+            workoutDayId: 'day-5x5-c',
+            exerciseId: 'ex-biceps-01',
+            exerciseOrder: 4,
+            targetSets: 3,
+            targetRepsMin: 8,
+            targetRepsMax: 10,
+            targetWeight: 32,
+            restSeconds: 60,
+            notes: 'Aislamiento final para flexores de codo.'
           }
         ]
       }
@@ -440,6 +858,8 @@ export const routineService = {
           setsConfig: Array.from({ length: e.targetSets }, (_, idx) => ({
             setNumber: idx + 1,
             targetReps: e.targetRepsMin,
+            targetRepsMin: e.targetRepsMin,
+            targetRepsMax: e.targetRepsMax,
             targetWeight: e.targetWeight,
           })),
         })),
@@ -447,10 +867,15 @@ export const routineService = {
     }));
   },
 
+  // Importar y guardar preset predeterminado en la cuenta del usuario según índice
+  async importPresetByIndex(index: number, userId?: string): Promise<WorkoutRoutine> {
+    const presets = this.getDefaultPresets(userId);
+    const selected = presets[index] || presets[0];
+    return await this.saveRoutine(selected, userId);
+  },
+
   // Importar y guardar preset predeterminado en la cuenta del usuario
   async importDefaultPreset(userId?: string): Promise<WorkoutRoutine> {
-    const presets = this.getDefaultPresets(userId);
-    const ppl = presets[0];
-    return await this.saveRoutine(ppl, userId);
+    return await this.importPresetByIndex(0, userId);
   }
 };

@@ -9,6 +9,30 @@ import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
 import { Plus, Play, Calendar, Trash2, Edit3, ChevronDown, ChevronUp, Dumbbell } from 'lucide-react';
 
+const PRESET_OPTIONS = [
+  {
+    index: 0,
+    title: 'Push / Pull / Legs (PPL - 3 Días)',
+    badge: 'Hipertrofia',
+    description: 'División clásica por patrones de movimiento: Empuje, Tracción y Piernas. Ideal para hipertrofia muscular.',
+    days: ['Push (Pecho, Hombro, Tríceps)', 'Pull (Espalda, Bíceps)', 'Legs (Piernas y Core)'],
+  },
+  {
+    index: 1,
+    title: 'Torso / Pierna / Fullbody (3 Días)',
+    badge: 'Frecuencia Óptima',
+    description: 'Excelente balance entre volumen semanal y descanso. Estimula cada grupo muscular 2 veces por semana.',
+    days: ['Torso (Pecho, Espalda, Hombros)', 'Piernas y Core', 'Fullbody (Cuerpo Completo)'],
+  },
+  {
+    index: 2,
+    title: 'Fuerza Básica 5x5 (3 Días)',
+    badge: 'Fuerza',
+    description: 'Enfoque en los grandes levantamientos compuestos con 5 series pesadas para desarrollo de fuerza.',
+    days: ['Fuerza A (Sentadilla, Banca, Remo)', 'Fuerza B (Militar, Peso Muerto)', 'Fuerza C (Banca, Dominadas)'],
+  },
+];
+
 export const RoutinesListPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -18,6 +42,9 @@ export const RoutinesListPage: React.FC = () => {
   const [expandedRoutineId, setExpandedRoutineId] = useState<string | null>(null);
   const [deleteRoutineId, setDeleteRoutineId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [importingIndex, setImportingIndex] = useState<number | null>(null);
 
   const loadRoutines = async () => {
     try {
@@ -46,9 +73,6 @@ export const RoutinesListPage: React.FC = () => {
     navigate('/workout/active');
   };
 
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isImportingPreset, setIsImportingPreset] = useState(false);
-
   const handleDelete = async () => {
     if (!deleteRoutineId) return;
     const targetId = deleteRoutineId;
@@ -66,16 +90,17 @@ export const RoutinesListPage: React.FC = () => {
     }
   };
 
-  const handleImportPreset = async () => {
+  const handleImportPreset = async (index: number) => {
     try {
-      setIsImportingPreset(true);
-      const newRoutine = await routineService.importDefaultPreset(user?.id);
+      setImportingIndex(index);
+      const newRoutine = await routineService.importPresetByIndex(index, user?.id);
       setRoutines([newRoutine]);
       setExpandedRoutineId(newRoutine.id);
+      setIsTemplateModalOpen(false);
     } catch (err) {
       console.error('Error importando rutina base:', err);
     } finally {
-      setIsImportingPreset(false);
+      setImportingIndex(null);
     }
   };
 
@@ -122,10 +147,9 @@ export const RoutinesListPage: React.FC = () => {
               size="lg"
               fullWidth
               variant="secondary"
-              isLoading={isImportingPreset}
-              onClick={handleImportPreset}
+              onClick={() => setIsTemplateModalOpen(true)}
             >
-              Cargar Plantilla (PPL)
+              Elegir Plantilla (3 Días)
             </Button>
           </div>
         </div>
@@ -230,6 +254,74 @@ export const RoutinesListPage: React.FC = () => {
             </Button>
             <Button variant="danger" onClick={handleDelete}>
               ELIMINAR
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Selección de Plantillas Predeterminadas */}
+      <Modal
+        isOpen={isTemplateModalOpen}
+        onClose={() => importingIndex === null && setIsTemplateModalOpen(false)}
+        title="Plantillas Predeterminadas de 3 Días"
+        maxWidth="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-gray-400">
+            Selecciona una rutina completa prediseñada con ejercicios, series, repeticiones y cargas iniciales:
+          </p>
+
+          <div className="space-y-3">
+            {PRESET_OPTIONS.map((preset) => (
+              <div
+                key={preset.index}
+                className="p-4 rounded-2xl bg-gym-bg border border-gym-border/80 hover:border-emerald-500/50 transition-all flex flex-col justify-between gap-3 shadow-sm"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <h4 className="text-sm font-black text-white">{preset.title}</h4>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {preset.badge}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-300 leading-relaxed mb-2.5">
+                    {preset.description}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {preset.days.map((day, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[10px] bg-slate-900 text-gray-300 px-2 py-0.5 rounded-lg border border-gym-border font-medium"
+                      >
+                        {day}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end border-t border-gym-border/40">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    isLoading={importingIndex === preset.index}
+                    disabled={importingIndex !== null}
+                    onClick={() => handleImportPreset(preset.index)}
+                  >
+                    Cargar Esta Plantilla
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={importingIndex !== null}
+              onClick={() => setIsTemplateModalOpen(false)}
+            >
+              Cerrar
             </Button>
           </div>
         </div>

@@ -1195,7 +1195,7 @@ export const RoutineEditorPage: React.FC = () => {
                         >
                           {/* Cabecera del Ejercicio */}
                           <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
                               <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-gym-border flex-shrink-0 shadow-inner">
                                 {ex && (
                                   <ExerciseImage
@@ -1206,7 +1206,7 @@ export const RoutineEditorPage: React.FC = () => {
                                   />
                                 )}
                               </div>
-                              <div className="min-w-0">
+                              <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                                     {exIdx + 1}.{' '}
@@ -1219,13 +1219,13 @@ export const RoutineEditorPage: React.FC = () => {
                                     </span>
                                   )}
                                 </div>
-                                <h4 className="text-sm font-bold text-white truncate mt-0.5">
+                                <h4 className="text-sm font-bold text-white whitespace-normal break-words leading-snug mt-0.5">
                                   {ex?.name || 'Ejercicio'}
                                 </h4>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
                               {/* Botón Toggle: Modo Simple vs Modo Avanzado Desglosado */}
                               <button
                                 type="button"
@@ -1652,7 +1652,7 @@ export const RoutineEditorPage: React.FC = () => {
                         onClick={() => handleSelectExercise(ex)}
                         className="p-2.5 rounded-xl bg-slate-900/90 border border-gym-border hover:border-emerald-500/80 hover:bg-slate-850 transition-all cursor-pointer flex items-center justify-between group"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-3 flex-1 min-w-0 mr-2">
                           <div className="w-11 h-11 rounded-lg overflow-hidden bg-slate-950 flex-shrink-0 border border-gym-border/60">
                             <ExerciseImage
                               imageUrl={ex.imageUrl}
@@ -1661,8 +1661,8 @@ export const RoutineEditorPage: React.FC = () => {
                               className="w-full h-full object-cover"
                             />
                           </div>
-                          <div className="min-w-0">
-                            <h5 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors truncate">
+                          <div className="flex-1 min-w-0">
+                            <h5 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors whitespace-normal break-words leading-tight">
                               {ex.name}
                             </h5>
                             <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mt-0.5">

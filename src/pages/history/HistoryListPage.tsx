@@ -1,10 +1,12 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { workoutService } from '../../services/workout.service';
 import { useAuthStore } from '../../store/useAuthStore';
 import { WorkoutSession } from '../../types/workout';
 import { formatDurationHuman, formatDateSpanish, formatWeight } from '../../utils/formatters';
-import { History, Calendar, Clock, Dumbbell, Award, ChevronDown, ChevronUp, ArrowLeft, Trophy } from 'lucide-react';
+import { History, Calendar, Clock, Dumbbell, Award, ChevronDown, ChevronUp, ArrowLeft, Trophy, Trash2 } from 'lucide-react';
+import { Modal } from '../../components/common/Modal';
+import { Button } from '../../components/common/Button';
 
 export const HistoryListPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +14,25 @@ export const HistoryListPage: React.FC = () => {
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(id || null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionToDelete, setSessionToDelete] = useState<WorkoutSession | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return;
+    try {
+      setIsDeleting(true);
+      await workoutService.deleteWorkoutSession(sessionToDelete.id, user?.id);
+      setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete.id));
+      if (selectedSessionId === sessionToDelete.id) {
+        setSelectedSessionId(null);
+      }
+      setSessionToDelete(null);
+    } catch (error) {
+      console.error('Error deleting session:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -152,6 +173,21 @@ export const HistoryListPage: React.FC = () => {
                         )}
                       </div>
                     ))}
+
+                    {/* Botón para eliminar entrenamiento */}
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSessionToDelete(session);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Borrar entrenamiento
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -159,6 +195,39 @@ export const HistoryListPage: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* Modal de confirmación para eliminar sesión */}
+      <Modal
+        isOpen={!!sessionToDelete}
+        onClose={() => !isDeleting && setSessionToDelete(null)}
+        title="¿Eliminar entrenamiento?"
+        maxWidth="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-300">
+            ¿Estás seguro de que deseas eliminar este registro de entrenamiento ({sessionToDelete?.routineName} · {sessionToDelete?.dayName})? Esta acción no se puede deshacer.
+          </p>
+          <div className="flex gap-2 justify-end pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSessionToDelete(null)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDeleteSession}
+              isLoading={isDeleting}
+              icon={<Trash2 className="w-4 h-4" />}
+            >
+              Eliminar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
