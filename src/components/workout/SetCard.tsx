@@ -62,12 +62,13 @@ export const SetCard: React.FC<SetCardProps> = ({
         </div>
       </div>
 
-      {/* 2. Ilustración Vectorial */}
-      <div className="my-3 h-40 sm:h-52 rounded-2xl overflow-hidden bg-slate-900 border border-gym-border/50 flex-shrink-0">
+      {/* 2. Ilustración Vectorial Anatómica (Frontal y Trasera) */}
+      <div className="my-3 h-48 sm:h-56 rounded-2xl overflow-hidden bg-slate-900 border border-gym-border/50 flex-shrink-0">
         <ExerciseImage
           imageUrl={card.exercise.imageUrl}
           name={card.exercise.name}
           muscleGroup={card.exercise.mainMuscleGroup}
+          secondaryMuscles={card.exercise.secondaryMuscles}
           variant="card"
           priority
           className="w-full h-full"

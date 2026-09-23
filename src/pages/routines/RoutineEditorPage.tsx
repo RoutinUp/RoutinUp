@@ -1419,6 +1419,7 @@ export const RoutineEditorPage: React.FC = () => {
                                     imageUrl={ex.imageUrl}
                                     name={ex.name}
                                     muscleGroup={ex.mainMuscleGroup}
+                                    secondaryMuscles={ex.secondaryMuscles}
                                     variant="thumbnail"
                                     className="w-full h-full"
                                   />
@@ -1925,6 +1926,7 @@ export const RoutineEditorPage: React.FC = () => {
                               imageUrl={ex.imageUrl}
                               name={ex.name}
                               muscleGroup={ex.mainMuscleGroup}
+                              secondaryMuscles={ex.secondaryMuscles}
                               variant="thumbnail"
                               className="w-full h-full"
                             />

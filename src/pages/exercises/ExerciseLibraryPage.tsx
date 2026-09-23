@@ -163,6 +163,7 @@ export const ExerciseLibraryPage: React.FC = () => {
                   imageUrl={ex.imageUrl}
                   name={ex.name}
                   muscleGroup={ex.mainMuscleGroup}
+                  secondaryMuscles={ex.secondaryMuscles}
                   variant="thumbnail"
                   className="w-full h-full"
                 />
@@ -203,11 +204,12 @@ export const ExerciseLibraryPage: React.FC = () => {
           maxWidth="md"
         >
           <div className="space-y-4">
-            <div className="w-full h-44 rounded-2xl overflow-hidden bg-slate-900">
+            <div className="w-full h-52 sm:h-60 rounded-2xl overflow-hidden bg-slate-900">
               <ExerciseImage
                 imageUrl={selectedExercise.imageUrl}
                 name={selectedExercise.name}
                 muscleGroup={selectedExercise.mainMuscleGroup}
+                secondaryMuscles={selectedExercise.secondaryMuscles}
                 variant="card"
                 className="w-full h-full"
               />

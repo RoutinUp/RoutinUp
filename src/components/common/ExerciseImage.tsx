@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Model, { IExerciseData, Muscle } from 'react-body-highlighter';
 import { MuscleGroup } from '../../types/exercise';
 import { Activity } from 'lucide-react';
 
@@ -6,6 +7,7 @@ export interface ExerciseImageProps {
   imageUrl?: string;
   name: string;
   muscleGroup: MuscleGroup;
+  secondaryMuscles?: string[];
   className?: string;
   priority?: boolean;
   variant?: 'auto' | 'thumbnail' | 'card' | 'badge';
@@ -18,63 +20,63 @@ interface MuscleMeta {
   sublabel: string;
 }
 
-const getMuscleMeta = (muscle: MuscleGroup): MuscleMeta => {
+export const getMuscleMeta = (muscle: MuscleGroup): MuscleMeta => {
   switch (muscle) {
     case 'pecho':
       return {
-        color: '#10B981', // Emerald vibrante
+        color: '#10B981', // Emerald
         bgTint: 'rgba(16, 185, 129, 0.15)',
         label: 'Pecho',
-        sublabel: 'Pectorales',
+        sublabel: 'Pectoral Mayor y Menor',
       };
     case 'espalda':
       return {
         color: '#06B6D4', // Cyan
         bgTint: 'rgba(6, 182, 212, 0.15)',
         label: 'Espalda',
-        sublabel: 'Dorsales y Trapecio',
+        sublabel: 'Dorsales, Trapecio y Lumbar',
       };
     case 'hombros':
       return {
         color: '#F59E0B', // Amber
         bgTint: 'rgba(245, 158, 11, 0.15)',
         label: 'Hombros',
-        sublabel: 'Deltoides',
+        sublabel: 'Deltoides Anterior, Lateral y Posterior',
       };
     case 'biceps':
       return {
         color: '#8B5CF6', // Violet
         bgTint: 'rgba(139, 92, 246, 0.15)',
         label: 'Bíceps',
-        sublabel: 'Brazo Anterior',
+        sublabel: 'Bíceps Braquial y Braquial Anterior',
       };
     case 'triceps':
       return {
-        color: '#EC4899', // Pink / Rose
+        color: '#EC4899', // Pink
         bgTint: 'rgba(236, 72, 153, 0.15)',
         label: 'Tríceps',
-        sublabel: 'Brazo Posterior',
+        sublabel: 'Tríceps Braquial (3 cabezas)',
       };
     case 'piernas':
       return {
         color: '#3B82F6', // Blue
         bgTint: 'rgba(59, 130, 246, 0.15)',
         label: 'Piernas',
-        sublabel: 'Cuádriceps y Glúteos',
+        sublabel: 'Cuádriceps, Isquiotibiales y Glúteos',
       };
     case 'core':
       return {
         color: '#EAB308', // Gold
         bgTint: 'rgba(234, 179, 8, 0.15)',
         label: 'Core',
-        sublabel: 'Abdomen y Lumbar',
+        sublabel: 'Recto Abdominal y Oblicuos',
       };
     case 'cardio':
       return {
         color: '#EF4444', // Red
         bgTint: 'rgba(239, 68, 68, 0.15)',
         label: 'Cardio',
-        sublabel: 'Resistencia Aeróbica',
+        sublabel: 'Activación Aeróbica Integral',
       };
     case 'cuerpo_completo':
     default:
@@ -82,251 +84,218 @@ const getMuscleMeta = (muscle: MuscleGroup): MuscleMeta => {
         color: '#6366F1', // Indigo
         bgTint: 'rgba(99, 102, 241, 0.15)',
         label: 'Cuerpo Completo',
-        sublabel: 'Full Body Funcional',
+        sublabel: 'Activación Muscular Global',
       };
   }
 };
 
 /**
- * Silueta humana estilizada y centrada que ilumina los músculos ejercitados.
+ * Mapeo inteligente y biomecánico del grupo muscular principal y nombre del ejercicio
+ * a los identificadores anatómicos de react-body-highlighter.
  */
-export const HumanAnatomySilhouette: React.FC<{
-  muscleGroup: MuscleGroup;
-  className?: string;
-}> = ({ muscleGroup, className = 'w-full h-full' }) => {
-  const meta = getMuscleMeta(muscleGroup);
-  const activeColor = meta.color;
+export const getPrimaryMuscles = (muscleGroup: MuscleGroup, exerciseName: string = ''): Muscle[] => {
+  const normName = exerciseName.toLowerCase();
 
-  const isChest = muscleGroup === 'pecho' || muscleGroup === 'cuerpo_completo';
-  const isBack = muscleGroup === 'espalda' || muscleGroup === 'cuerpo_completo';
-  const isShoulders = muscleGroup === 'hombros' || muscleGroup === 'cuerpo_completo';
-  const isBiceps = muscleGroup === 'biceps' || muscleGroup === 'cuerpo_completo';
-  const isTriceps = muscleGroup === 'triceps' || muscleGroup === 'cuerpo_completo';
-  const isCore = muscleGroup === 'core' || muscleGroup === 'cuerpo_completo';
-  const isLegs = muscleGroup === 'piernas' || muscleGroup === 'cuerpo_completo';
-  const isCardio = muscleGroup === 'cardio';
+  switch (muscleGroup) {
+    case 'pecho':
+      return ['chest'];
 
-  const baseMuscleColor = '#334155'; // Gris pizarra oscuro para músculos en reposo
-  const deepBaseColor = '#1E293B'; // Tono más oscuro para fondo/profundidad anatómica
+    case 'espalda':
+      if (normName.includes('trapecio') || normName.includes('encogimiento')) {
+        return ['trapezius'];
+      }
+      if (normName.includes('lumbar') || normName.includes('hiperextens')) {
+        return ['lower-back'];
+      }
+      if (normName.includes('peso muerto')) {
+        return ['lower-back', 'hamstring', 'gluteal', 'trapezius'];
+      }
+      return ['upper-back', 'trapezius'];
 
-  return (
-    <svg
-      viewBox="0 0 200 230"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={`${className} select-none`}
-    >
-      <defs>
-        {/* Filtro de resplandor para el músculo iluminado */}
-        <filter id={`glow-${muscleGroup}`} x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor={activeColor} floodOpacity="0.65" />
-        </filter>
-      </defs>
+    case 'hombros':
+      if (normName.includes('posterior') || normName.includes('pajaro') || normName.includes('pájaro')) {
+        return ['back-deltoids', 'trapezius'];
+      }
+      if (normName.includes('frontal')) {
+        return ['front-deltoids'];
+      }
+      if (normName.includes('lateral') || normName.includes('elevacion') || normName.includes('elevación')) {
+        return ['front-deltoids', 'back-deltoids'];
+      }
+      return ['front-deltoids', 'back-deltoids'];
 
-      {/* Silueta Humana Base */}
-      {/* 1. Cabeza y Cuello */}
-      <circle cx="100" cy="24" r="14" fill={deepBaseColor} />
-      <path d="M93 37H107L116 48H84L93 37Z" fill={baseMuscleColor} />
+    case 'biceps':
+      return ['biceps'];
 
-      {/* 2. Trapecio */}
-      <path
-        d="M84 48L100 44L116 48L126 58H74L84 48Z"
-        fill={isBack ? activeColor : deepBaseColor}
-        filter={isBack ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
+    case 'triceps':
+      return ['triceps'];
 
-      {/* 3. Hombros / Deltoides */}
-      <path
-        d="M74 58 C64 62 56 74 60 86 C64 92 72 90 77 82 Z"
-        fill={isShoulders ? activeColor : baseMuscleColor}
-        filter={isShoulders ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <path
-        d="M126 58 C136 62 144 74 140 86 C136 92 128 90 123 82 Z"
-        fill={isShoulders ? activeColor : baseMuscleColor}
-        filter={isShoulders ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
+    case 'piernas':
+      if (normName.includes('gemelo') || normName.includes('pantorrilla') || normName.includes('talon') || normName.includes('talón')) {
+        return ['calves'];
+      }
+      if (normName.includes('femoral') || normName.includes('isquio') || normName.includes('rumano')) {
+        return ['hamstring', 'gluteal'];
+      }
+      if (normName.includes('cuadriceps') || normName.includes('cuádriceps') || normName.includes('extension') || normName.includes('extensión')) {
+        return ['quadriceps'];
+      }
+      if (normName.includes('gluteo') || normName.includes('glúteo') || normName.includes('hip thrust') || normName.includes('puente')) {
+        return ['gluteal'];
+      }
+      if (normName.includes('aductor') || normName.includes('adductor')) {
+        return ['adductor'];
+      }
+      if (normName.includes('abductor')) {
+        return ['abductors'];
+      }
+      if (normName.includes('prensa') || normName.includes('sentadilla') || normName.includes('hack') || normName.includes('zancada') || normName.includes('estocada')) {
+        return ['quadriceps', 'gluteal'];
+      }
+      return ['quadriceps', 'hamstring', 'gluteal', 'calves'];
 
-      {/* 4. Bíceps y Tríceps (Brazos) */}
-      <path
-        d="M59 86 C55 96 53 112 57 122 C61 124 66 118 68 108 Z"
-        fill={isBiceps || isTriceps ? activeColor : baseMuscleColor}
-        filter={isBiceps || isTriceps ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <path
-        d="M141 86 C145 96 147 112 143 122 C139 124 134 118 132 108 Z"
-        fill={isBiceps || isTriceps ? activeColor : baseMuscleColor}
-        filter={isBiceps || isTriceps ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
+    case 'core':
+      if (normName.includes('oblicuo') || normName.includes('lateral') || normName.includes('rusa')) {
+        return ['obliques'];
+      }
+      if (normName.includes('lumbar') || normName.includes('hiperextens')) {
+        return ['lower-back'];
+      }
+      return ['abs', 'obliques'];
 
-      {/* Antebrazos */}
-      <path
-        d="M57 122 C54 132 55 146 59 154 C63 155 67 148 67 138 Z"
-        fill={isBiceps ? activeColor : deepBaseColor}
-        className="transition-colors duration-300"
-      />
-      <path
-        d="M143 122 C146 132 145 146 141 154 C137 155 133 148 133 138 Z"
-        fill={isBiceps ? activeColor : deepBaseColor}
-        className="transition-colors duration-300"
-      />
+    case 'cardio':
+      return ['quadriceps', 'calves', 'hamstring'];
 
-      {/* 5. Espalda / Dorsales (visibles en los laterales del torso) */}
-      <path
-        d="M73 80 C68 96 73 114 83 122 C85 110 81 92 77 82 Z"
-        fill={isBack ? activeColor : deepBaseColor}
-        filter={isBack ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <path
-        d="M127 80 C132 96 127 114 117 122 C115 110 119 92 123 82 Z"
-        fill={isBack ? activeColor : deepBaseColor}
-        filter={isBack ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-
-      {/* 6. Pecho (Pectorales Mayor y Menor Iluminados) */}
-      <path
-        d="M79 59 C88 59 98 65 98 82 C86 84 76 76 75 66 Z"
-        fill={isChest ? activeColor : baseMuscleColor}
-        filter={isChest ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <path
-        d="M121 59 C112 59 102 65 102 82 C114 84 124 76 125 66 Z"
-        fill={isChest ? activeColor : baseMuscleColor}
-        filter={isChest ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-
-      {/* 7. Core / Abdominales (Six-pack simétrico) */}
-      <rect
-        x="85"
-        y="88"
-        width="13"
-        height="9"
-        rx="2"
-        fill={isCore ? activeColor : baseMuscleColor}
-        filter={isCore ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <rect
-        x="102"
-        y="88"
-        width="13"
-        height="9"
-        rx="2"
-        fill={isCore ? activeColor : baseMuscleColor}
-        filter={isCore ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <rect
-        x="85"
-        y="100"
-        width="13"
-        height="9"
-        rx="2"
-        fill={isCore ? activeColor : baseMuscleColor}
-        filter={isCore ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <rect
-        x="102"
-        y="100"
-        width="13"
-        height="9"
-        rx="2"
-        fill={isCore ? activeColor : baseMuscleColor}
-        filter={isCore ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <rect
-        x="86"
-        y="112"
-        width="12"
-        height="9"
-        rx="2"
-        fill={isCore ? activeColor : baseMuscleColor}
-        filter={isCore ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <rect
-        x="102"
-        y="112"
-        width="12"
-        height="9"
-        rx="2"
-        fill={isCore ? activeColor : baseMuscleColor}
-        filter={isCore ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-
-      {/* 8. Pelvis / Cintura */}
-      <path d="M84 124 H116 L121 138 H79 L84 124 Z" fill={deepBaseColor} />
-
-      {/* 9. Piernas / Cuádriceps y Glúteos */}
-      <path
-        d="M82 138 C75 152 73 178 78 198 C85 200 91 180 94 158 Z"
-        fill={isLegs ? activeColor : baseMuscleColor}
-        filter={isLegs ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-      <path
-        d="M118 138 C125 152 127 178 122 198 C115 200 109 180 106 158 Z"
-        fill={isLegs ? activeColor : baseMuscleColor}
-        filter={isLegs ? `url(#glow-${muscleGroup})` : undefined}
-        className="transition-colors duration-300"
-      />
-
-      {/* Vasto medial / interior muslo */}
-      <path
-        d="M86 160 C90 176 92 190 88 198 C84 198 84 186 84 172 Z"
-        fill={isLegs ? activeColor : deepBaseColor}
-        className="transition-colors duration-300"
-      />
-      <path
-        d="M114 160 C110 176 108 190 112 198 C116 198 116 186 116 172 Z"
-        fill={isLegs ? activeColor : deepBaseColor}
-        className="transition-colors duration-300"
-      />
-
-      {/* Gemelos / Pantorrillas */}
-      <path
-        d="M78 200 C76 210 78 224 82 228 C86 228 88 216 87 202 Z"
-        fill={isLegs ? activeColor : deepBaseColor}
-        className="transition-colors duration-300"
-      />
-      <path
-        d="M122 200 C124 210 122 224 118 228 C114 228 112 216 113 202 Z"
-        fill={isLegs ? activeColor : deepBaseColor}
-        className="transition-colors duration-300"
-      />
-
-      {/* Efecto especial para cardio: Pulso central en el pecho */}
-      {isCardio && (
-        <g filter={`url(#glow-${muscleGroup})`}>
-          <path
-            d="M82 72 H92 L96 64 L100 80 L104 68 L108 72 H118"
-            stroke={activeColor}
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </g>
-      )}
-    </svg>
-  );
+    case 'cuerpo_completo':
+    default:
+      return ['chest', 'upper-back', 'quadriceps', 'abs'];
+  }
 };
+
+/**
+ * Mapeo de músculos secundarios a partir de la lista del ejercicio o deducción biomecánica.
+ */
+export const getSecondaryMuscles = (
+  secondaryMusclesList: string[] = [],
+  primaryMuscles: Muscle[],
+  exerciseName: string = ''
+): Muscle[] => {
+  const normName = exerciseName.toLowerCase();
+  const secondarySet = new Set<Muscle>();
+
+  // 1. Mapeo a partir de los datos explícitos del ejercicio
+  secondaryMusclesList.forEach((sec) => {
+    const s = sec.toLowerCase().trim();
+    if (s.includes('tricep')) secondarySet.add('triceps');
+    else if (s.includes('bicep')) secondarySet.add('biceps');
+    else if (s.includes('hombro') || s.includes('deltoide')) {
+      secondarySet.add('front-deltoids');
+      secondarySet.add('back-deltoids');
+    } else if (s.includes('pecho') || s.includes('pectoral')) {
+      secondarySet.add('chest');
+    } else if (s.includes('espalda') || s.includes('dorsal')) {
+      secondarySet.add('upper-back');
+    } else if (s.includes('trapecio')) {
+      secondarySet.add('trapezius');
+    } else if (s.includes('lumbar') || s.includes('lumbares')) {
+      secondarySet.add('lower-back');
+    } else if (s.includes('core') || s.includes('abdom')) {
+      secondarySet.add('abs');
+      secondarySet.add('obliques');
+    } else if (s.includes('glute')) {
+      secondarySet.add('gluteal');
+    } else if (s.includes('antebrazo')) {
+      secondarySet.add('forearm');
+    } else if (s.includes('cuadricep') || s.includes('cuádricep')) {
+      secondarySet.add('quadriceps');
+    } else if (s.includes('femoral') || s.includes('isquio')) {
+      secondarySet.add('hamstring');
+    } else if (s.includes('gemelo') || s.includes('pantorrilla')) {
+      secondarySet.add('calves');
+    } else if (s.includes('aductor')) {
+      secondarySet.add('adductor');
+    } else if (s.includes('abductor')) {
+      secondarySet.add('abductors');
+    } else if (s.includes('pierna')) {
+      secondarySet.add('quadriceps');
+      secondarySet.add('hamstring');
+    }
+  });
+
+  // 2. Si no hay secundarios explícitos, deducir según ejercicios compuestos comunes
+  if (secondarySet.size === 0) {
+    if (
+      normName.includes('press banca') ||
+      normName.includes('press plano') ||
+      normName.includes('flexion') ||
+      normName.includes('flexión') ||
+      normName.includes('push up') ||
+      normName.includes('fondos')
+    ) {
+      secondarySet.add('triceps');
+      secondarySet.add('front-deltoids');
+    } else if (normName.includes('press inclinado')) {
+      secondarySet.add('front-deltoids');
+      secondarySet.add('triceps');
+    } else if (
+      normName.includes('press militar') ||
+      normName.includes('press hombros') ||
+      normName.includes('press de hombros')
+    ) {
+      secondarySet.add('triceps');
+      secondarySet.add('trapezius');
+    } else if (
+      normName.includes('dominadas') ||
+      normName.includes('jalon') ||
+      normName.includes('jalón') ||
+      normName.includes('remo')
+    ) {
+      secondarySet.add('biceps');
+      secondarySet.add('forearm');
+      secondarySet.add('back-deltoids');
+    } else if (normName.includes('curl')) {
+      secondarySet.add('forearm');
+    } else if (
+      normName.includes('sentadilla') ||
+      normName.includes('squat') ||
+      normName.includes('prensa')
+    ) {
+      secondarySet.add('gluteal');
+      secondarySet.add('hamstring');
+    } else if (normName.includes('peso muerto')) {
+      secondarySet.add('trapezius');
+      secondarySet.add('forearm');
+    }
+  }
+
+  // Filtrar cualquier músculo que ya esté activo como principal
+  const primarySet = new Set(primaryMuscles);
+  return Array.from(secondarySet).filter((m) => !primarySet.has(m));
+};
+
+/** Músculos que se visualizan principalmente en la cara posterior */
+const POSTERIOR_PRIMARY_MUSCLES = new Set<Muscle>([
+  'upper-back',
+  'lower-back',
+  'trapezius',
+  'triceps',
+  'hamstring',
+  'gluteal',
+  'back-deltoids',
+  'neck',
+]);
+
+// Paleta Anatómica de Alta Definición para Modo Oscuro
+const ANATOMY_BODY_COLOR = '#232E42'; // Silueta oscura azulada / slate profesional
+const COLOR_SECONDARY = '#F59E0B'; // Ámbar / amarillo para músculos secundarios
+const COLOR_PRIMARY = '#10B981'; // Verde Esmeralda vibrante para músculos principales
+const HIGHLIGHTED_PALETTE = [COLOR_SECONDARY, COLOR_PRIMARY];
 
 export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   imageUrl,
   name,
   muscleGroup,
+  secondaryMuscles = [],
   className = '',
   priority = false,
   variant = 'auto',
@@ -334,7 +303,31 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   const [imageError, setImageError] = useState(false);
   const meta = getMuscleMeta(muscleGroup);
 
-  // Si hay imagen real de URL y no falló, renderizarla
+  // Calcular músculos anatómicos principales y secundarios
+  const primaryMuscles = getPrimaryMuscles(muscleGroup, name);
+  const secondaryMusclesCalculated = getSecondaryMuscles(secondaryMuscles, primaryMuscles, name);
+
+  // Estructura de datos para react-body-highlighter:
+  // Frecuencia 1 -> HIGHLIGHTED_PALETTE[0] (Ámbar - Secundario)
+  // Frecuencia 2 -> HIGHLIGHTED_PALETTE[1] (Verde Esmeralda - Principal)
+  const exerciseData: IExerciseData[] = [
+    ...(secondaryMusclesCalculated.length > 0
+      ? [
+          {
+            name: 'Secundario',
+            muscles: secondaryMusclesCalculated,
+            frequency: 1,
+          },
+        ]
+      : []),
+    {
+      name: 'Principal',
+      muscles: primaryMuscles,
+      frequency: 2,
+    },
+  ];
+
+  // Si hay imagen real proporcionada y no falló, renderizar imagen fotográfica
   if (imageUrl && !imageError) {
     return (
       <div className={`relative overflow-hidden rounded-2xl bg-slate-900 border border-gym-border/60 ${className}`}>
@@ -355,7 +348,7 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
     );
   }
 
-  // 1. MODO THUMBNAIL / BADGE (para listas, editores y selectores compactos)
+  // 1. MODO MINIATURA / THUMBNAIL (para tarjetas compactas de listas y selectores)
   const isThumbnail =
     variant === 'thumbnail' ||
     variant === 'badge' ||
@@ -365,42 +358,47 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
     className.includes('w-16');
 
   if (isThumbnail) {
+    // Determinar la vista óptima (anterior o posterior) según dónde se concentre el músculo principal
+    const hasPosterior = primaryMuscles.some((m) => POSTERIOR_PRIMARY_MUSCLES.has(m));
+    const thumbnailType = hasPosterior ? 'posterior' : 'anterior';
+
     return (
       <div
-        className={`w-full h-full rounded-xl flex items-center justify-center relative select-none overflow-hidden p-1 ${className}`}
-        style={{
-          backgroundColor: '#0D131F',
-          border: `1px solid ${meta.color}35`,
-          boxShadow: `inset 0 0 10px ${meta.color}10`,
-        }}
+        className={`w-full h-full rounded-xl flex items-center justify-center relative select-none overflow-hidden p-1 bg-[#0D131F] border border-gym-border/60 shadow-inner ${className}`}
         title={`${name} (${meta.label})`}
       >
-        <HumanAnatomySilhouette
-          muscleGroup={muscleGroup}
-          className="w-full h-full max-h-full object-contain drop-shadow-sm"
-        />
+        <div className="w-full h-full flex items-center justify-center">
+          <Model
+            type={thumbnailType}
+            data={exerciseData}
+            bodyColor={ANATOMY_BODY_COLOR}
+            highlightedColors={HIGHLIGHTED_PALETTE}
+            style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          />
+        </div>
       </div>
     );
   }
 
-  // 2. MODO CARD COMPLETA (para pantalla de entrenamiento activo o modal de detalle)
+  // 2. MODO TARJETA COMPLETA CON VISTAS DUALES (FRONTAL Y TRASERA LADO A LADO)
+  // Pantalla de Iniciar Rutina (SetCard) y Modal de Detalles del Catálogo de Ejercicios
   return (
     <div
-      className={`w-full h-full relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#131B28] via-[#0E141F] to-[#0A0D15] border border-gym-border/80 flex flex-col items-center justify-center select-none p-3 ${className}`}
+      className={`w-full h-full relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#131B28] via-[#0E141F] to-[#0A0D15] border border-gym-border/80 flex flex-col justify-between select-none p-3 sm:p-4 ${className}`}
     >
-      {/* Resplandor radial de acento visual según el grupo muscular */}
+      {/* Resplandor sutil de fondo según el músculo principal */}
       <div
         className="absolute inset-0 pointer-events-none opacity-20"
         style={{
-          background: `radial-gradient(circle at 50% 45%, ${meta.color} 0%, transparent 68%)`,
+          background: `radial-gradient(circle at 50% 45%, ${COLOR_PRIMARY} 0%, transparent 68%)`,
         }}
       />
 
       {/* Trama sutil de micropuntos de fondo */}
       <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px] pointer-events-none" />
 
-      {/* Badge flotante en la esquina superior izquierda */}
-      <div className="absolute top-2.5 left-2.5 z-10">
+      {/* Cabecera de la tarjeta: Badge de Grupo Muscular y Badge de Actividad */}
+      <div className="relative z-10 w-full flex items-center justify-between flex-shrink-0">
         <div
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md"
           style={{
@@ -412,25 +410,82 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: meta.color }} />
           {meta.label}
         </div>
+
+        {/* Leyenda compacta en cabecera para pantallas grandes */}
+        <div className="flex items-center gap-2">
+          <div className="hidden xs:flex items-center gap-2.5 text-[10px] font-semibold text-gray-300 bg-black/40 px-2.5 py-1 rounded-full border border-white/5 backdrop-blur-sm">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981]"></span>
+              Principal
+            </span>
+            {secondaryMusclesCalculated.length > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-[#F59E0B] shadow-[0_0_6px_#F59E0B]"></span>
+                Secundario
+              </span>
+            )}
+          </div>
+          <div className="p-1.5 rounded-lg bg-black/40 border border-white/5 text-gray-400">
+            <Activity className="w-3.5 h-3.5" style={{ color: meta.color }} />
+          </div>
+        </div>
       </div>
 
-      {/* Badge esquina superior derecha */}
-      <div className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-lg bg-black/40 border border-white/5 text-gray-400">
-        <Activity className="w-3.5 h-3.5" style={{ color: meta.color }} />
-      </div>
-
-      {/* Ilustración de la Silueta Humana Centrada con Músculos Iluminados */}
-      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center my-auto">
-        <div className="flex items-center justify-center h-32 sm:h-36 w-full max-h-[80%]">
-          <HumanAnatomySilhouette
-            muscleGroup={muscleGroup}
-            className="h-full w-auto max-w-[80%] drop-shadow-md"
-          />
+      {/* Cuerpo Central: Modelos Anatómicos Frontal y Trasero Lado a Lado */}
+      <div className="relative z-10 w-full flex-1 flex items-center justify-center gap-3 sm:gap-6 my-auto min-h-0 py-1">
+        {/* Vista Frontal */}
+        <div className="flex flex-col items-center h-full max-h-full justify-between flex-1 max-w-[120px] sm:max-w-[150px]">
+          <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 py-0.5 rounded-md bg-slate-800/80 border border-white/5 mb-1 flex-shrink-0">
+            Frontal
+          </span>
+          <div className="flex-1 w-full aspect-[1/2] max-h-[140px] sm:max-h-[180px] flex items-center justify-center">
+            <Model
+              type="anterior"
+              data={exerciseData}
+              bodyColor={ANATOMY_BODY_COLOR}
+              highlightedColors={HIGHLIGHTED_PALETTE}
+              style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            />
+          </div>
         </div>
 
-        <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1.5">
+        {/* Separador vertical estilizado */}
+        <div className="w-px h-24 sm:h-32 bg-gradient-to-b from-transparent via-white/10 to-transparent flex-shrink-0" />
+
+        {/* Vista Trasera */}
+        <div className="flex flex-col items-center h-full max-h-full justify-between flex-1 max-w-[120px] sm:max-w-[150px]">
+          <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 py-0.5 rounded-md bg-slate-800/80 border border-white/5 mb-1 flex-shrink-0">
+            Trasera
+          </span>
+          <div className="flex-1 w-full aspect-[1/2] max-h-[140px] sm:max-h-[180px] flex items-center justify-center">
+            <Model
+              type="posterior"
+              data={exerciseData}
+              bodyColor={ANATOMY_BODY_COLOR}
+              highlightedColors={HIGHLIGHTED_PALETTE}
+              style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Pie de la tarjeta: Sublabel anatómico y Leyenda de Colores */}
+      <div className="relative z-10 w-full flex items-center justify-between pt-1.5 border-t border-white/5 flex-shrink-0 text-[10px] sm:text-[11px]">
+        <span className="text-gray-400 font-medium truncate max-w-[55%]">
           {meta.sublabel}
         </span>
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5 text-gray-300 font-semibold">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981]"></span>
+            Principal
+          </span>
+          {secondaryMusclesCalculated.length > 0 && (
+            <span className="flex items-center gap-1.5 text-gray-300 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-[#F59E0B] shadow-[0_0_6px_#F59E0B]"></span>
+              Secundario
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
