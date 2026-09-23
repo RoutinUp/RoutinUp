@@ -1205,7 +1205,8 @@ export const RoutineEditorPage: React.FC = () => {
                                     imageUrl={ex.imageUrl}
                                     name={ex.name}
                                     muscleGroup={ex.mainMuscleGroup}
-                                    className="w-full h-full object-cover"
+                                    variant="thumbnail"
+                                    className="w-full h-full"
                                   />
                                 )}
                               </div>
@@ -1222,7 +1223,7 @@ export const RoutineEditorPage: React.FC = () => {
                                     </span>
                                   )}
                                 </div>
-                                <h4 className="text-sm font-bold text-white whitespace-normal break-words leading-snug mt-0.5">
+                                <h4 className="text-[clamp(0.95rem,3.8vw,1.15rem)] font-bold text-white whitespace-normal break-words [word-break:break-word] leading-snug mt-0.5">
                                   {ex?.name || 'Ejercicio'}
                                 </h4>
                               </div>
@@ -1661,11 +1662,12 @@ export const RoutineEditorPage: React.FC = () => {
                               imageUrl={ex.imageUrl}
                               name={ex.name}
                               muscleGroup={ex.mainMuscleGroup}
-                              className="w-full h-full object-cover"
+                              variant="thumbnail"
+                              className="w-full h-full"
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h5 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors whitespace-normal break-words leading-tight">
+                            <h5 className="text-[clamp(0.85rem,3.2vw,1rem)] font-bold text-white group-hover:text-emerald-400 transition-colors whitespace-normal break-words [word-break:break-word] leading-snug">
                               {ex.name}
                             </h5>
                             <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mt-0.5">

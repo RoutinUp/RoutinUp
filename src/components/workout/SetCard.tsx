@@ -48,12 +48,12 @@ export const SetCard: React.FC<SetCardProps> = ({
   return (
     <div className="w-full flex flex-col bg-gym-card rounded-3xl border border-gym-border/80 shadow-2xl p-3.5 sm:p-5">
       {/* 1. Header del Ejercicio y Serie */}
-      <div className="flex items-center justify-between gap-2 border-b border-gym-border/40 pb-2 flex-shrink-0">
-        <div className="min-w-0">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">
+      <div className="flex items-center justify-between gap-3 border-b border-gym-border/40 pb-2.5 flex-shrink-0">
+        <div className="min-w-0 flex-1">
+          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">
             Ejercicio {card.exerciseOrder} de {card.totalExercisesInDay}
           </span>
-          <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight leading-tight truncate">
+          <h2 className="text-[clamp(1rem,4vw,1.35rem)] font-black text-white tracking-tight leading-snug whitespace-normal break-words [word-break:break-word]">
             {card.exercise.name}
           </h2>
         </div>
@@ -62,14 +62,15 @@ export const SetCard: React.FC<SetCardProps> = ({
         </div>
       </div>
 
-      {/* 2. Ilustración Anatómica */}
+      {/* 2. Ilustración Vectorial */}
       <div className="my-3 h-40 sm:h-52 rounded-2xl overflow-hidden bg-slate-900 border border-gym-border/50 flex-shrink-0">
         <ExerciseImage
           imageUrl={card.exercise.imageUrl}
           name={card.exercise.name}
           muscleGroup={card.exercise.mainMuscleGroup}
+          variant="card"
           priority
-          className="w-full h-full object-contain"
+          className="w-full h-full"
         />
       </div>
 
@@ -110,7 +111,7 @@ export const SetCard: React.FC<SetCardProps> = ({
 
         {/* Notas personales del ejercicio si existen */}
         {card.notes && (
-          <p className="text-[10px] text-gray-400 bg-slate-900/60 px-2 py-1 rounded-lg border-l-2 border-emerald-500 italic truncate">
+          <p className="text-[10px] text-gray-400 bg-slate-900/60 px-2 py-1 rounded-lg border-l-2 border-emerald-500 italic whitespace-normal break-words [word-break:break-word]">
             "{card.notes}"
           </p>
         )}

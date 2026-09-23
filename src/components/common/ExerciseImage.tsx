@@ -1,14 +1,309 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { MuscleGroup } from '../../types/exercise';
-import { Dumbbell, Activity } from 'lucide-react';
 
-interface ExerciseImageProps {
+export interface ExerciseImageProps {
   imageUrl?: string;
   name: string;
   muscleGroup: MuscleGroup;
   className?: string;
   priority?: boolean;
+  variant?: 'auto' | 'thumbnail' | 'card' | 'badge';
 }
+
+interface MuscleMeta {
+  color: string;
+  bgTint: string;
+  label: string;
+  sublabel: string;
+}
+
+const getMuscleMeta = (muscle: MuscleGroup): MuscleMeta => {
+  switch (muscle) {
+    case 'pecho':
+      return {
+        color: '#10B981', // Emerald
+        bgTint: 'rgba(16, 185, 129, 0.14)',
+        label: 'Pecho',
+        sublabel: 'Pectorales',
+      };
+    case 'espalda':
+      return {
+        color: '#06B6D4', // Cyan
+        bgTint: 'rgba(6, 182, 212, 0.14)',
+        label: 'Espalda',
+        sublabel: 'Dorsales y Trapecio',
+      };
+    case 'hombros':
+      return {
+        color: '#F59E0B', // Amber
+        bgTint: 'rgba(245, 158, 11, 0.14)',
+        label: 'Hombros',
+        sublabel: 'Deltoides',
+      };
+    case 'biceps':
+      return {
+        color: '#8B5CF6', // Violet
+        bgTint: 'rgba(139, 92, 246, 0.14)',
+        label: 'Bíceps',
+        sublabel: 'Brazo Anterior',
+      };
+    case 'triceps':
+      return {
+        color: '#F43F5E', // Rose
+        bgTint: 'rgba(244, 63, 94, 0.14)',
+        label: 'Tríceps',
+        sublabel: 'Brazo Posterior',
+      };
+    case 'piernas':
+      return {
+        color: '#3B82F6', // Blue
+        bgTint: 'rgba(59, 130, 246, 0.14)',
+        label: 'Piernas',
+        sublabel: 'Cuádriceps y Glúteos',
+      };
+    case 'core':
+      return {
+        color: '#EAB308', // Yellow
+        bgTint: 'rgba(234, 179, 8, 0.14)',
+        label: 'Core',
+        sublabel: 'Abdomen y Lumbar',
+      };
+    case 'cardio':
+      return {
+        color: '#EF4444', // Red
+        bgTint: 'rgba(239, 68, 68, 0.14)',
+        label: 'Cardio',
+        sublabel: 'Resistencia Aeróbica',
+      };
+    case 'cuerpo_completo':
+    default:
+      return {
+        color: '#6366F1', // Indigo
+        bgTint: 'rgba(99, 102, 241, 0.14)',
+        label: 'Cuerpo Completo',
+        sublabel: 'Full Body Funcional',
+      };
+  }
+};
+
+/**
+ * Íconos SVG vectoriales minimalistas de líneas finas (strokeWidth 1.75-2)
+ * para cada grupo muscular.
+ */
+export const MuscleGroupIcon: React.FC<{
+  muscleGroup: MuscleGroup;
+  color?: string;
+  className?: string;
+}> = ({ muscleGroup, color, className = 'w-6 h-6' }) => {
+  const meta = getMuscleMeta(muscleGroup);
+  const strokeColor = color || meta.color;
+
+  switch (muscleGroup) {
+    case 'pecho':
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {/* Clavículas / Cuello */}
+          <path d="M7 11C11 12.5 13.5 12.5 16 11.5C18.5 12.5 21 12.5 25 11" />
+          {/* Esternón vertical */}
+          <path d="M16 12V22" strokeDasharray="1 2" />
+          {/* Pectoral Izquierdo */}
+          <path d="M8 13C12 13 15 14.5 15 20C12 21.5 9 20.5 7.5 18C6.5 15.5 7.2 13.8 8 13Z" fill={meta.bgTint} />
+          {/* Pectoral Derecho */}
+          <path d="M24 13C20 13 17 14.5 17 20C20 21.5 23 20.5 24.5 18C25.5 15.5 24.8 13.8 24 13Z" fill={meta.bgTint} />
+        </svg>
+      );
+
+    case 'espalda':
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {/* Columna vertebral */}
+          <path d="M16 7V26" strokeDasharray="1.5 2" />
+          {/* Trapecio superior */}
+          <path d="M11 9L16 7L21 9" />
+          {/* Dorsales V-Taper Izquierdo */}
+          <path d="M9 11C13.5 13 15 17 15 23C12.5 23 10 20 8.5 15C8 13.5 8.5 12 9 11Z" fill={meta.bgTint} />
+          {/* Dorsales V-Taper Derecho */}
+          <path d="M23 11C18.5 13 17 17 17 23C19.5 23 22 20 23.5 15C24 13.5 23.5 12 23 11Z" fill={meta.bgTint} />
+        </svg>
+      );
+
+    case 'hombros':
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {/* Cuello y Trapecio */}
+          <path d="M13 10C14 12 15 12.5 16 12.5C17 12.5 18 12 19 10" />
+          <path d="M11 13H21" />
+          {/* Deltoide Izquierdo (cap lateral y anterior) */}
+          <path d="M10 13C7 14 5 17 5 20C6 22.5 8.5 22.5 10.5 20C11 17 11 14.5 10 13Z" fill={meta.bgTint} />
+          {/* Deltoide Derecho (cap lateral y anterior) */}
+          <path d="M22 13C25 14 27 17 27 20C26 22.5 23.5 22.5 21.5 20C21 17 21 14.5 22 13Z" fill={meta.bgTint} />
+          {/* Línea pectoral superior */}
+          <path d="M11 19C13 21 19 21 21 19" />
+        </svg>
+      );
+
+    case 'biceps':
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {/* Brazo en flexión: hombro, bíceps picudo y antebrazo */}
+          <path d="M8 16L11 11C12.5 9.5 15 10 16 12.5" />
+          {/* Pico del bíceps */}
+          <path d="M16 12.5C18 11.5 21 12.5 22 15.5C22 18.5 19 20 16 19.5" fill={meta.bgTint} />
+          {/* Codo y antebrazo inferior */}
+          <path d="M10 13L9 19C9 22 12.5 23 16 23L23 23" />
+          <path d="M16 23C20.5 23 23 21.5 23 18" />
+        </svg>
+      );
+
+    case 'triceps':
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {/* Brazo posterior y herradura del tríceps */}
+          <path d="M11 9C14.5 9 16 11.5 16 15" />
+          {/* Herradura del tríceps lateral / largo */}
+          <path d="M16 14C19 15.5 20 19 19 23C17.5 26 14.5 26 13 26" fill={meta.bgTint} />
+          <path d="M13 26L11 21L11 12" />
+          <path d="M15 16C17 17.5 17 20 16 22" />
+        </svg>
+      );
+
+    case 'piernas':
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {/* Cadera */}
+          <path d="M9 9H23" />
+          {/* Muslo Izquierdo / Cuádriceps */}
+          <path d="M10 10C8.5 15 9 19.5 11 24C12 24.5 13.5 24 14.5 21.5C14 17 13.5 12.5 12.5 10" fill={meta.bgTint} />
+          {/* Muslo Derecho / Cuádriceps */}
+          <path d="M22 10C23.5 15 23 19.5 21 24C20 24.5 18.5 24 17.5 21.5C18 17 18.5 12.5 19.5 10" fill={meta.bgTint} />
+          {/* Rodillas / Rótulas */}
+          <path d="M11 25H13" />
+          <path d="M19 25H21" />
+          {/* Gota del vasto medial */}
+          <path d="M13 17C14 19 14 21 13.5 22.5" />
+          <path d="M19 17C18 19 18 21 18.5 22.5" />
+        </svg>
+      );
+
+    case 'core':
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {/* Silueta del torso y cintura */}
+          <path d="M9 8C10.5 14 9.5 20.5 11 26" />
+          <path d="M23 8C21.5 14 22.5 20.5 21 26" />
+          {/* Línea alba */}
+          <path d="M16 8V25" />
+          {/* Abdominales simétricos tipo grid */}
+          <rect x="11.5" y="10" width="3.5" height="3.5" rx="1" fill={meta.bgTint} />
+          <rect x="17" y="10" width="3.5" height="3.5" rx="1" fill={meta.bgTint} />
+          <rect x="11.5" y="15" width="3.5" height="3.5" rx="1" fill={meta.bgTint} />
+          <rect x="17" y="15" width="3.5" height="3.5" rx="1" fill={meta.bgTint} />
+          <rect x="12" y="20" width="3" height="3.5" rx="1" fill={meta.bgTint} />
+          <rect x="17" y="20" width="3" height="3.5" rx="1" fill={meta.bgTint} />
+        </svg>
+      );
+
+    case 'cardio':
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {/* Línea de pulso cardíaco ECG dinámica */}
+          <path d="M4 16H8L11 9L15 23L19 13L21 18L23 16H28" />
+          <circle cx="15" cy="23" r="1.5" fill={strokeColor} />
+          <circle cx="11" cy="9" r="1.5" fill={strokeColor} />
+        </svg>
+      );
+
+    case 'cuerpo_completo':
+    default:
+      return (
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          stroke={strokeColor}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+        >
+          {/* Cabeza */}
+          <circle cx="16" cy="6.5" r="2.5" fill={meta.bgTint} />
+          {/* Torso & Línea atlética */}
+          <path d="M16 10V19" />
+          <path d="M10 13L16 11L22 13" />
+          {/* Extremidades inferiores */}
+          <path d="M16 19L12.5 27" />
+          <path d="M16 19L19.5 27" />
+          {/* Extremidades superiores */}
+          <path d="M10 13L8 18" />
+          <path d="M22 13L24 18" />
+        </svg>
+      );
+  }
+};
 
 export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   imageUrl,
@@ -16,36 +311,15 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
   muscleGroup,
   className = '',
   priority = false,
+  variant = 'auto',
 }) => {
   const [imageError, setImageError] = useState(false);
+  const meta = getMuscleMeta(muscleGroup);
 
-  // Colores de acento visual según grupo muscular
-  const getMuscleColor = (muscle: MuscleGroup) => {
-    switch (muscle) {
-      case 'pecho':
-        return { fill: '#10B981', label: 'Pectorales', bg: 'rgba(16, 185, 129, 0.15)' };
-      case 'espalda':
-        return { fill: '#06B6D4', label: 'Dorsales / Espalda', bg: 'rgba(6, 182, 212, 0.15)' };
-      case 'hombros':
-        return { fill: '#F59E0B', label: 'Deltoides', bg: 'rgba(245, 158, 11, 0.15)' };
-      case 'biceps':
-        return { fill: '#8B5CF6', label: 'Bíceps', bg: 'rgba(139, 92, 246, 0.15)' };
-      case 'triceps':
-        return { fill: '#EC4899', label: 'Tríceps', bg: 'rgba(236, 72, 153, 0.15)' };
-      case 'piernas':
-        return { fill: '#3B82F6', label: 'Cuádriceps / Glúteos', bg: 'rgba(59, 130, 246, 0.15)' };
-      case 'core':
-        return { fill: '#EAB308', label: 'Abdomen / Core', bg: 'rgba(234, 179, 8, 0.15)' };
-      default:
-        return { fill: '#10B981', label: 'Fitness', bg: 'rgba(16, 185, 129, 0.15)' };
-    }
-  };
-
-  const muscleMeta = getMuscleColor(muscleGroup);
-
+  // Si hay imagen real de URL y no falló, renderizarla
   if (imageUrl && !imageError) {
     return (
-      <div className={`relative overflow-hidden rounded-2xl bg-gym-card border border-gym-border/60 ${className}`}>
+      <div className={`relative overflow-hidden rounded-2xl bg-slate-900 border border-gym-border/60 ${className}`}>
         <img
           src={imageUrl}
           alt={name}
@@ -53,142 +327,88 @@ export const ExerciseImage: React.FC<ExerciseImageProps> = ({
           onError={() => setImageError(true)}
           className="w-full h-full object-cover object-center transition-transform duration-300 hover:scale-105"
         />
-        <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-md bg-black/60 text-white border border-white/10 uppercase tracking-wider flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: muscleMeta.fill }}></span>
-          {muscleGroup}
-        </div>
+        {variant !== 'thumbnail' && variant !== 'badge' && (
+          <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md bg-black/60 text-white border border-white/10 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.color }}></span>
+            {meta.label}
+          </div>
+        )}
       </div>
     );
   }
 
-  // Placeholder anatómico SVG estilizado que destaca el grupo muscular
+  // 1. MODO THUMBNAIL / BADGE (para listas, editores y selectores compactos)
+  const isThumbnail =
+    variant === 'thumbnail' ||
+    variant === 'badge' ||
+    className.includes('w-11') ||
+    className.includes('w-12') ||
+    className.includes('w-14') ||
+    className.includes('w-16');
+
+  if (isThumbnail) {
+    return (
+      <div
+        className={`w-full h-full rounded-xl flex items-center justify-center relative select-none transition-all ${className}`}
+        style={{
+          backgroundColor: '#0D131F',
+          border: `1px solid ${meta.color}35`,
+          boxShadow: `inset 0 0 12px ${meta.color}10`,
+        }}
+        title={`${name} (${meta.label})`}
+      >
+        <MuscleGroupIcon muscleGroup={muscleGroup} className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-sm" />
+      </div>
+    );
+  }
+
+  // 2. MODO CARD COMPLETA (para pantalla de entrenamiento activo o modal de detalle)
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#182234] to-[#0F172A] border border-gym-border/80 flex flex-col items-center justify-center select-none ${className}`}
-      style={{ minHeight: '180px' }}
+      className={`w-full h-full relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#131B28] via-[#0E141F] to-[#0A0D15] border border-gym-border/80 flex flex-col items-center justify-center select-none p-4 ${className}`}
     >
-      {/* Patrón de cuadrícula tenue de fondo */}
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#10B981_1px,transparent_1px)] [background-size:16px_16px]" />
+      {/* Resplandor radial de acento visual sutil según el grupo muscular */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-20"
+        style={{
+          background: `radial-gradient(circle at 50% 45%, ${meta.color} 0%, transparent 68%)`,
+        }}
+      />
 
-      {/* Ilustración anatómica vectorial estilizada */}
-      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-4">
-        <svg
-          viewBox="0 0 200 220"
-          className="w-32 h-36 max-h-[70%] drop-shadow-md"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
+      {/* Trama sutil de micropuntos de fondo */}
+      <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px] pointer-events-none" />
+
+      {/* Badge flotante en la esquina superior izquierda */}
+      <div className="absolute top-2.5 left-2.5 z-10">
+        <div
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider backdrop-blur-md"
+          style={{
+            backgroundColor: `${meta.color}18`,
+            color: meta.color,
+            border: `1px solid ${meta.color}35`,
+          }}
         >
-          {/* Silueta Humana Base en Gris Oscuro */}
-          <circle cx="100" cy="30" r="16" fill="#334155" />
-          {/* Cuello y Trapecio */}
-          <path d="M92 46H108L118 60H82L92 46Z" fill="#334155" />
-          
-          {/* Hombros / Deltoides */}
-          <path
-            d="M74 60 C66 64 60 76 64 88 C68 94 74 92 78 82 Z"
-            fill={muscleGroup === 'hombros' ? muscleMeta.fill : '#334155'}
-            className="transition-colors duration-500"
-          />
-          <path
-            d="M126 60 C134 64 140 76 136 88 C132 94 126 92 122 82 Z"
-            fill={muscleGroup === 'hombros' ? muscleMeta.fill : '#334155'}
-            className="transition-colors duration-500"
-          />
-
-          {/* Bíceps y Tríceps */}
-          <path
-            d="M62 88 C58 98 56 112 60 120 C64 122 68 116 70 106 Z"
-            fill={muscleGroup === 'biceps' || muscleGroup === 'triceps' ? muscleMeta.fill : '#334155'}
-          />
-          <path
-            d="M138 88 C142 98 144 112 140 120 C136 122 132 116 130 106 Z"
-            fill={muscleGroup === 'biceps' || muscleGroup === 'triceps' ? muscleMeta.fill : '#334155'}
-          />
-
-          {/* Pecho (Pectorales Mayor y Menor) */}
-          <path
-            d="M80 62 C88 62 98 68 98 84 C86 86 76 78 76 68 Z"
-            fill={muscleGroup === 'pecho' ? muscleMeta.fill : '#334155'}
-            className="transition-colors duration-500"
-          />
-          <path
-            d="M120 62 C112 62 102 68 102 84 C114 86 124 78 124 68 Z"
-            fill={muscleGroup === 'pecho' ? muscleMeta.fill : '#334155'}
-            className="transition-colors duration-500"
-          />
-
-          {/* Espalda / Dorsal Ancho */}
-          <path
-            d="M74 80 C70 96 74 114 84 122 C86 110 82 92 78 82 Z"
-            fill={muscleGroup === 'espalda' ? muscleMeta.fill : '#1E293B'}
-          />
-          <path
-            d="M126 80 C130 96 126 114 116 122 C114 110 118 92 122 82 Z"
-            fill={muscleGroup === 'espalda' ? muscleMeta.fill : '#1E293B'}
-          />
-
-          {/* Core / Abdominales */}
-          <rect
-            x="86"
-            y="90"
-            width="12"
-            height="10"
-            rx="2"
-            fill={muscleGroup === 'core' ? muscleMeta.fill : '#334155'}
-          />
-          <rect
-            x="102"
-            y="90"
-            width="12"
-            height="10"
-            rx="2"
-            fill={muscleGroup === 'core' ? muscleMeta.fill : '#334155'}
-          />
-          <rect
-            x="86"
-            y="104"
-            width="12"
-            height="10"
-            rx="2"
-            fill={muscleGroup === 'core' ? muscleMeta.fill : '#334155'}
-          />
-          <rect
-            x="102"
-            y="104"
-            width="12"
-            height="10"
-            rx="2"
-            fill={muscleGroup === 'core' ? muscleMeta.fill : '#334155'}
-          />
-
-          {/* Piernas / Cuádriceps y Glúteos */}
-          <path
-            d="M84 126 C78 140 76 166 80 186 C86 188 92 168 94 146 Z"
-            fill={muscleGroup === 'piernas' ? muscleMeta.fill : '#334155'}
-          />
-          <path
-            d="M116 126 C122 140 124 166 120 186 C114 188 108 168 106 146 Z"
-            fill={muscleGroup === 'piernas' ? muscleMeta.fill : '#334155'}
-          />
-        </svg>
-
-        {/* Nombre del Músculo y Ejercicio */}
-        <div className="mt-2 text-center">
-          <span
-            className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider uppercase"
-            style={{ backgroundColor: muscleMeta.bg, color: muscleMeta.fill }}
-          >
-            {muscleMeta.label}
-          </span>
-          <p className="text-xs text-gray-400 font-medium mt-1 truncate max-w-[200px]">
-            {name}
-          </p>
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: meta.color }} />
+          {meta.label}
         </div>
       </div>
 
-      {/* Badge esquina */}
-      <div className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-black/40 border border-white/5 text-gray-400">
-        <Activity className="w-3.5 h-3.5" style={{ color: muscleMeta.fill }} />
+      {/* Ilustración central limpia y estilizada en SVG */}
+      <div className="relative z-10 flex flex-col items-center justify-center my-auto py-2">
+        <div
+          className="p-4 rounded-3xl backdrop-blur-sm border transition-transform duration-300 hover:scale-105"
+          style={{
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            borderColor: `${meta.color}30`,
+            boxShadow: `0 8px 24px -6px ${meta.color}25`,
+          }}
+        >
+          <MuscleGroupIcon muscleGroup={muscleGroup} className="w-16 h-16 sm:w-20 sm:h-20 drop-shadow-md" />
+        </div>
+
+        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-3">
+          {meta.sublabel}
+        </span>
       </div>
     </div>
   );

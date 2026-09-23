@@ -185,11 +185,11 @@ export const HomePage: React.FC = () => {
                 {/* Lista previa compacta de ejercicios */}
                 <div className="space-y-1 py-1">
                   {nextDay.exercises.slice(0, 3).map((ex, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs text-gray-300">
-                      <span className="font-semibold truncate max-w-[200px]">
+                    <div key={idx} className="flex items-center justify-between gap-2 text-xs text-gray-300">
+                      <span className="font-semibold whitespace-normal break-words [word-break:break-word] flex-1 min-w-0">
                         {idx + 1}. {ex.exercise?.name || 'Ejercicio'}
                       </span>
-                      <span className="text-gray-400 text-[11px]">
+                      <span className="text-gray-400 text-[11px] flex-shrink-0">
                         {ex.targetSets} series · {ex.targetRepsMin}–{ex.targetRepsMax} reps
                       </span>
                     </div>

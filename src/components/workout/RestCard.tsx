@@ -121,15 +121,17 @@ export const RestCard: React.FC<RestCardProps> = ({
         <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">
           A continuación:
         </span>
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-base font-black text-white">{card.nextExerciseName}</h4>
-            <p className="text-xs text-gray-400">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-[clamp(0.95rem,3.8vw,1.15rem)] font-black text-white whitespace-normal break-words [word-break:break-word] leading-snug">
+              {card.nextExerciseName}
+            </h4>
+            <p className="text-xs text-gray-400 mt-0.5">
               Serie {card.nextSetNumber} de {card.nextTotalSets} {card.nextTargetReps ? `· Meta: ${card.nextTargetReps} reps` : ''}
             </p>
           </div>
           {card.nextTargetWeight ? (
-            <span className="px-2.5 py-1 rounded-xl bg-slate-800 text-xs font-black text-white border border-slate-700">
+            <span className="px-2.5 py-1 rounded-xl bg-slate-800 text-xs font-black text-white border border-slate-700 flex-shrink-0">
               {card.nextTargetWeight} kg
             </span>
           ) : null}

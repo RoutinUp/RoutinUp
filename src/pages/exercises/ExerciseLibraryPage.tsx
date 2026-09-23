@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { exerciseService } from '../../services/exercise.service';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Exercise, MuscleGroup, CreateExerciseInput } from '../../types/exercise';
@@ -158,12 +158,13 @@ export const ExerciseLibraryPage: React.FC = () => {
               className="p-3.5 rounded-2xl bg-gym-card border border-gym-border/70 hover:border-emerald-500/50 transition-all cursor-pointer flex items-center gap-3.5 group"
             >
               {/* Miniatura Ilustración Anatómica */}
-              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-slate-900 border border-gym-border/80">
+              <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-slate-900 border border-gym-border/80">
                 <ExerciseImage
                   imageUrl={ex.imageUrl}
                   name={ex.name}
                   muscleGroup={ex.mainMuscleGroup}
-                  className="w-full h-full object-cover"
+                  variant="thumbnail"
+                  className="w-full h-full"
                 />
               </div>
 
@@ -179,7 +180,7 @@ export const ExerciseLibraryPage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <h4 className="text-sm font-bold text-white truncate group-hover:text-emerald-400 transition-colors">
+                <h4 className="text-[clamp(0.95rem,3.5vw,1.1rem)] font-bold text-white whitespace-normal break-words [word-break:break-word] group-hover:text-emerald-400 transition-colors leading-snug">
                   {ex.name}
                 </h4>
                 <p className="text-xs text-gray-400 truncate mt-0.5">
@@ -187,7 +188,7 @@ export const ExerciseLibraryPage: React.FC = () => {
                 </p>
               </div>
 
-              <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors" />
+              <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
             </div>
           ))}
         </div>
@@ -207,6 +208,7 @@ export const ExerciseLibraryPage: React.FC = () => {
                 imageUrl={selectedExercise.imageUrl}
                 name={selectedExercise.name}
                 muscleGroup={selectedExercise.mainMuscleGroup}
+                variant="card"
                 className="w-full h-full"
               />
             </div>
