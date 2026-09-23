@@ -3,6 +3,8 @@ import { Exercise } from './exercise';
 export interface RoutineSetDetail {
   setNumber: number;
   targetReps: number;
+  targetRepsMin?: number;
+  targetRepsMax?: number;
   targetWeight: number;
 }
 

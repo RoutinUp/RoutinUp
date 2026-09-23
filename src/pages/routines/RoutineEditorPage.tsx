@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { routineService } from '../../services/routine.service';
 import { exerciseService } from '../../services/exercise.service';
@@ -43,32 +43,47 @@ type MuscleFilterCategory =
   | 'piernas'
   | 'hombros'
   | 'brazos'
-  | 'core'
-  | 'otros';
+  | 'core';
 
-const MUSCLE_FILTER_OPTIONS: {
+interface MuscleFilterOption {
   id: MuscleFilterCategory;
   label: string;
-  matches: (mg: MuscleGroup) => boolean;
-}[] = [
+  matches: (group: MuscleGroup) => boolean;
+}
+
+const MUSCLE_FILTER_OPTIONS: MuscleFilterOption[] = [
   { id: 'todos', label: 'Todos', matches: () => true },
-  { id: 'pecho', label: 'Pecho', matches: (mg) => mg === 'pecho' },
-  { id: 'espalda', label: 'Espalda', matches: (mg) => mg === 'espalda' },
-  { id: 'piernas', label: 'Piernas', matches: (mg) => mg === 'piernas' },
-  { id: 'hombros', label: 'Hombros', matches: (mg) => mg === 'hombros' },
-  { id: 'brazos', label: 'Brazos', matches: (mg) => mg === 'biceps' || mg === 'triceps' },
-  { id: 'core', label: 'Core / Abdomen', matches: (mg) => mg === 'core' },
-  { id: 'otros', label: 'Otros', matches: (mg) => mg === 'cardio' || mg === 'cuerpo_completo' },
+  { id: 'pecho', label: 'Pecho', matches: (g) => g === 'pecho' },
+  { id: 'espalda', label: 'Espalda', matches: (g) => g === 'espalda' },
+  {
+    id: 'piernas',
+    label: 'Piernas',
+    matches: (g) =>
+      ['piernas', 'cuadriceps', 'isquios', 'pantorrillas', 'gluteos'].includes(g),
+  },
+  { id: 'hombros', label: 'Hombros', matches: (g) => g === 'hombros' },
+  {
+    id: 'brazos',
+    label: 'Brazos',
+    matches: (g) => ['biceps', 'triceps', 'antebrazos'].includes(g),
+  },
+  { id: 'core', label: 'Core', matches: (g) => ['abdominales', 'core'].includes(g) },
 ];
 
 const MUSCLE_GROUP_DISPLAY_NAMES: Record<string, string> = {
   pecho: 'Pecho',
   espalda: 'Espalda',
   piernas: 'Piernas',
+  cuadriceps: 'Cuádriceps',
+  isquios: 'Isquios',
+  pantorrillas: 'Pantorrillas',
+  gluteos: 'Glúteos',
   hombros: 'Hombros',
-  biceps: 'Bíceps (Brazos)',
-  triceps: 'Tríceps (Brazos)',
-  core: 'Abdomen / Core',
+  biceps: 'Bíceps',
+  triceps: 'Tríceps',
+  antebrazos: 'Antebrazos',
+  abdominales: 'Abdominales',
+  core: 'Core',
   cardio: 'Cardio',
   cuerpo_completo: 'Cuerpo Completo',
 };
@@ -88,42 +103,67 @@ const ORDERED_MUSCLE_GROUPS: MuscleGroup[] = [
 const PROMPT_SUGGESTIONS = [
   {
     title: 'Torso / Pierna (2 Días)',
-    text: 'Día 1: Torso A. Press de banca plano 4x10 con 80kg, Remo con barra 4x8 con 70kg, Press militar con mancuernas 3x10 con 20kg, Jalón al pecho 3x12 con 60kg, Curl de bíceps 3x12 con 14kg, Extensiones de tríceps 3x12 con 25kg.\n\nDía 2: Piernas A. Sentadilla con barra 4x8 con 100kg, Prensa de piernas 4x10 con 180kg, Peso muerto rumano 3x10 con 80kg, Extensiones de cuádriceps 3x12 con 50kg, Gemelos en máquina 4x15 con 60kg.',
+    prompt:
+      'Crea una rutina de 2 días:\nDía 1: Torso (Press banca con barra 4x8 con 70kg, Remo con barra 4x8 con 60kg, Press militar con mancuernas 3x10 con 18kg, Curl de bíceps 3x12 con 12kg).\nDía 2: Pierna (Sentadilla con barra 4x8 con 80kg, Peso muerto rumano 4x10 con 70kg, Prensa de piernas 3x12 con 120kg, Elevación de talones 4x15 con 40kg).',
   },
   {
-    title: 'Pecho y Tríceps',
-    text: 'Rutina de Pecho y Tríceps: Press de banca plano 4 series de 10 reps con 80kg, Press inclinado con mancuernas 3 series de 10 reps con 26kg, Aperturas en polea 3x12 con 15kg, Fondos en paralelas 3x10 con peso corporal, Extensiones en polea alta piramidal: serie 1 25kg x 12, serie 2 30kg x 10, serie 3 35kg x 8.',
+    title: 'Hipertrofia Pecho y Tríceps',
+    prompt:
+      'Crea una rutina para pecho y tríceps con enfoque en hipertrofia. Incluye Press banca plano, Press inclinado con mancuernas, Fondos en paralelas y Extensiones de tríceps en polea alta.',
   },
   {
-    title: 'Espalda y Bíceps',
-    text: 'Entrenamiento de Espalda y Bíceps: Dominadas 4x8, Jalón al pecho 4x10 con 65kg, Remo con barra 4x8 con 70kg, Remo Gironda 3x12 con 55kg, Curl con barra Z 4x10 con 30kg, Curl Martillo 3x12 con 14kg.',
+    title: 'Fuerza Piernas y Core',
+    prompt:
+      'Diseña una rutina de fuerza para piernas y abdomen con Sentadilla trasera pesada, Peso muerto rumano, Prensa de piernas y Plancha abdominal.',
   },
   {
-    title: 'Piernas Completa',
-    text: 'Día de Piernas: Sentadilla trasera libre 4 series de 8 con 100kg, Prensa inclinada 4x10 con 200kg, Extensiones de cuádriceps 3x12 con 55kg, Curl femoral tumbado 4x10 con 45kg, Elevación de gemelos 4x15 con 60kg.',
+    title: 'Espalda Densidad y Bíceps',
+    prompt:
+      'Genera una rutina de espalda y bíceps con Dominadas lastradas, Remo con barra T, Jalón al pecho y Curl martillo.',
   },
 ];
 
+const getDraftStorageKey = (routineId?: string) =>
+  `routineup_draft_routine_${routineId || 'new'}`;
+
 const ensureSetsConfig = (dayEx: WorkoutDayExercise): RoutineSetDetail[] => {
   if (dayEx.setsConfig && dayEx.setsConfig.length > 0) {
-    return dayEx.setsConfig;
+    return dayEx.setsConfig.map((s, idx) => {
+      const repsMin = s.targetRepsMin ?? s.targetReps ?? dayEx.targetRepsMin ?? 8;
+      const repsMax = s.targetRepsMax ?? s.targetReps ?? dayEx.targetRepsMax ?? 10;
+      return {
+        setNumber: s.setNumber || idx + 1,
+        targetRepsMin: repsMin,
+        targetRepsMax: repsMax,
+        targetReps: s.targetReps ?? repsMax,
+        targetWeight: s.targetWeight ?? dayEx.targetWeight ?? 0,
+      };
+    });
   }
   const count = Math.max(1, dayEx.targetSets || 4);
-  const reps = dayEx.targetRepsMax || dayEx.targetRepsMin || 10;
+  const repsMin = dayEx.targetRepsMin ?? 8;
+  const repsMax = dayEx.targetRepsMax ?? 10;
   const weight = dayEx.targetWeight || 0;
   return Array.from({ length: count }, (_, i) => ({
     setNumber: i + 1,
-    targetReps: reps,
+    targetRepsMin: repsMin,
+    targetRepsMax: repsMax,
+    targetReps: repsMax,
     targetWeight: weight,
   }));
 };
 
 const hasVariedSets = (ex: WorkoutDayExercise): boolean => {
   if (!ex.setsConfig || ex.setsConfig.length <= 1) return false;
-  const firstWeight = ex.setsConfig[0].targetWeight;
-  const firstReps = ex.setsConfig[0].targetReps;
+  const first = ex.setsConfig[0];
+  const firstWeight = first.targetWeight ?? 0;
+  const firstMin = first.targetRepsMin ?? first.targetReps ?? 10;
+  const firstMax = first.targetRepsMax ?? first.targetReps ?? 10;
   return ex.setsConfig.some(
-    (s) => s.targetWeight !== firstWeight || s.targetReps !== firstReps
+    (s) =>
+      (s.targetWeight ?? 0) !== firstWeight ||
+      (s.targetRepsMin ?? s.targetReps ?? 10) !== firstMin ||
+      (s.targetRepsMax ?? s.targetReps ?? 10) !== firstMax
   );
 };
 
@@ -133,6 +173,7 @@ export const RoutineEditorPage: React.FC = () => {
   const { user } = useAuthStore();
 
   const isEditing = Boolean(id && id !== 'new');
+  const isInitializedRef = useRef(false);
 
   // Modo de creación: 'manual' o 'ai' (SOLO disponible al crear una rutina nueva)
   const [creationMode, setCreationMode] = useState<'manual' | 'ai'>('manual');
@@ -159,11 +200,36 @@ export const RoutineEditorPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
     const initData = async () => {
       const exercises = await exerciseService.getExercises(user?.id);
       setAllExercises(exercises);
 
+      const draftKey = getDraftStorageKey(id && id !== 'new' ? id : undefined);
+      let draftData: any = null;
+      try {
+        const storedDraft = localStorage.getItem(draftKey);
+        if (storedDraft) {
+          draftData = JSON.parse(storedDraft);
+        }
+      } catch (err) {
+        console.warn('Error reading draft from localStorage:', err);
+      }
+
       if (isEditing && id) {
+        if (draftData && Array.isArray(draftData.days) && draftData.days.length > 0) {
+          setRoutineName(draftData.routineName || 'Mi Rutina');
+          setDescription(draftData.description || '');
+          setDays(draftData.days);
+          setCustomizedExercises(draftData.customizedExercises || {});
+          if (typeof draftData.activeDayIndex === 'number') {
+            setActiveDayIndex(draftData.activeDayIndex);
+          }
+          return;
+        }
+
         const found = await routineService.getRoutineById(id, user?.id);
         if (found) {
           setRoutineName(found.name);
@@ -191,7 +257,25 @@ export const RoutineEditorPage: React.FC = () => {
         }
       }
 
-      // Si es nueva rutina, inicializar con un día por defecto
+      // Si es nueva rutina:
+      if (draftData && Array.isArray(draftData.days) && draftData.days.length > 0) {
+        setRoutineName(draftData.routineName || 'Nueva Rutina');
+        setDescription(draftData.description || '');
+        setDays(draftData.days);
+        setCustomizedExercises(draftData.customizedExercises || {});
+        if (typeof draftData.activeDayIndex === 'number') {
+          setActiveDayIndex(draftData.activeDayIndex);
+        }
+        if (draftData.creationMode) {
+          setCreationMode(draftData.creationMode);
+        }
+        if (draftData.aiPrompt) {
+          setAiPrompt(draftData.aiPrompt);
+        }
+        return;
+      }
+
+      // Si es nueva rutina sin borrador previo, inicializar con un día por defecto
       setRoutineName('Nueva Rutina');
       setDays([
         {
@@ -205,7 +289,39 @@ export const RoutineEditorPage: React.FC = () => {
     };
 
     initData();
-  }, [id, isEditing, user]);
+  }, [id, isEditing]);
+
+  // Persistir borrador en localStorage para no perder progreso ante esperas o re-renders
+  useEffect(() => {
+    if (!isInitializedRef.current) return;
+    if (days.length === 0 && !routineName) return;
+
+    const draftKey = getDraftStorageKey(id && id !== 'new' ? id : undefined);
+    try {
+      const payload = {
+        routineName,
+        description,
+        days,
+        customizedExercises,
+        activeDayIndex,
+        creationMode,
+        aiPrompt,
+        updatedAt: Date.now(),
+      };
+      localStorage.setItem(draftKey, JSON.stringify(payload));
+    } catch (err) {
+      console.warn('Error saving routine draft to localStorage:', err);
+    }
+  }, [
+    id,
+    routineName,
+    description,
+    days,
+    customizedExercises,
+    activeDayIndex,
+    creationMode,
+    aiPrompt,
+  ]);
 
   const handleAddDay = () => {
     const newDayNum = days.length + 1;
@@ -310,8 +426,21 @@ export const RoutineEditorPage: React.FC = () => {
         const ex = currentDay.exercises[exIndex];
         const sets = ensureSetsConfig(ex);
         const uniformWeight = sets[0]?.targetWeight ?? ex.targetWeight ?? 0;
+        const uniformRepsMin =
+          sets[0]?.targetRepsMin ?? sets[0]?.targetReps ?? ex.targetRepsMin ?? 8;
+        const uniformRepsMax =
+          sets[0]?.targetRepsMax ?? sets[0]?.targetReps ?? ex.targetRepsMax ?? 10;
         ex.targetWeight = uniformWeight;
-        ex.setsConfig = sets.map((s) => ({ ...s, targetWeight: uniformWeight }));
+        ex.targetRepsMin = uniformRepsMin;
+        ex.targetRepsMax = uniformRepsMax;
+        ex.targetSets = sets.length;
+        ex.setsConfig = sets.map((s) => ({
+          ...s,
+          targetWeight: uniformWeight,
+          targetRepsMin: uniformRepsMin,
+          targetRepsMax: uniformRepsMax,
+          targetReps: uniformRepsMax,
+        }));
         setDays(updated);
       }
     }
@@ -329,11 +458,14 @@ export const RoutineEditorPage: React.FC = () => {
 
     const currentSets = ensureSetsConfig(ex);
     const baseWeight = ex.targetWeight || (currentSets[0]?.targetWeight ?? 0);
-    const baseReps = ex.targetRepsMax || ex.targetRepsMin || (currentSets[0]?.targetReps ?? 10);
+    const baseRepsMin = ex.targetRepsMin || (currentSets[0]?.targetRepsMin ?? 8);
+    const baseRepsMax = ex.targetRepsMax || (currentSets[0]?.targetRepsMax ?? 10);
 
     const nextSets: RoutineSetDetail[] = Array.from({ length: safeCount }, (_, idx) => ({
       setNumber: idx + 1,
-      targetReps: currentSets[idx]?.targetReps ?? baseReps,
+      targetRepsMin: currentSets[idx]?.targetRepsMin ?? baseRepsMin,
+      targetRepsMax: currentSets[idx]?.targetRepsMax ?? baseRepsMax,
+      targetReps: currentSets[idx]?.targetReps ?? baseRepsMax,
       targetWeight: currentSets[idx]?.targetWeight ?? baseWeight,
     }));
 
@@ -372,7 +504,9 @@ export const RoutineEditorPage: React.FC = () => {
     const currentSets = ensureSetsConfig(ex);
     ex.setsConfig = currentSets.map((s) => ({
       ...s,
-      targetReps: newReps,
+      targetRepsMin: newReps,
+      targetRepsMax: Math.max(s.targetRepsMax ?? newReps, newReps),
+      targetReps: Math.max(s.targetRepsMax ?? newReps, newReps),
     }));
 
     setDays(updated);
@@ -392,6 +526,8 @@ export const RoutineEditorPage: React.FC = () => {
     const currentSets = ensureSetsConfig(ex);
     ex.setsConfig = currentSets.map((s) => ({
       ...s,
+      targetRepsMin: Math.min(s.targetRepsMin ?? newReps, newReps),
+      targetRepsMax: newReps,
       targetReps: newReps,
     }));
 
@@ -410,8 +546,16 @@ export const RoutineEditorPage: React.FC = () => {
 
     const newSet: RoutineSetDetail = {
       setNumber: currentSets.length + 1,
-      targetReps: lastSet ? lastSet.targetReps : 10,
-      targetWeight: lastSet ? lastSet.targetWeight : 0,
+      targetRepsMin: lastSet
+        ? (lastSet.targetRepsMin ?? lastSet.targetReps ?? 8)
+        : ex.targetRepsMin || 8,
+      targetRepsMax: lastSet
+        ? (lastSet.targetRepsMax ?? lastSet.targetReps ?? 10)
+        : ex.targetRepsMax || 10,
+      targetReps: lastSet
+        ? (lastSet.targetRepsMax ?? lastSet.targetReps ?? 10)
+        : ex.targetRepsMax || 10,
+      targetWeight: lastSet ? lastSet.targetWeight : ex.targetWeight || 0,
     };
 
     const nextSets = [...currentSets, newSet];
@@ -441,7 +585,7 @@ export const RoutineEditorPage: React.FC = () => {
   const handleUpdateSetField = (
     exIndex: number,
     setIdx: number,
-    field: 'targetReps' | 'targetWeight',
+    field: 'targetReps' | 'targetRepsMin' | 'targetRepsMax' | 'targetWeight',
     value: number
   ) => {
     const updated = [...days];
@@ -452,16 +596,34 @@ export const RoutineEditorPage: React.FC = () => {
     const currentSets = [...ensureSetsConfig(ex)];
 
     if (currentSets[setIdx]) {
-      currentSets[setIdx] = {
-        ...currentSets[setIdx],
-        [field]: value,
-      };
+      const set = { ...currentSets[setIdx] };
+      if (field === 'targetWeight') {
+        set.targetWeight = value;
+      } else if (field === 'targetRepsMin') {
+        set.targetRepsMin = value;
+        if ((set.targetRepsMax ?? 0) < value) {
+          set.targetRepsMax = value;
+        }
+        set.targetReps = set.targetRepsMax ?? value;
+      } else if (field === 'targetRepsMax') {
+        set.targetRepsMax = value;
+        if ((set.targetRepsMin ?? value) > value) {
+          set.targetRepsMin = value;
+        }
+        set.targetReps = value;
+      } else if (field === 'targetReps') {
+        set.targetReps = value;
+        set.targetRepsMin = value;
+        set.targetRepsMax = value;
+      }
+
+      currentSets[setIdx] = set;
       ex.setsConfig = currentSets;
 
       if (setIdx === 0) {
         if (field === 'targetWeight') ex.targetWeight = value;
-        if (field === 'targetReps') {
-          ex.targetRepsMin = value;
+        if (field === 'targetRepsMin') ex.targetRepsMin = value;
+        if (field === 'targetRepsMax') {
           ex.targetRepsMax = value;
         }
       }
@@ -485,7 +647,11 @@ export const RoutineEditorPage: React.FC = () => {
     setDays(updated);
   };
 
-  const handleCopyRepsToAll = (exIndex: number, reps: number) => {
+  const handleCopyRepsToAll = (
+    exIndex: number,
+    repsMin: number,
+    repsMax: number
+  ) => {
     const updated = [...days];
     const currentDay = updated[activeDayIndex];
     if (!currentDay || !currentDay.exercises[exIndex]) return;
@@ -493,12 +659,14 @@ export const RoutineEditorPage: React.FC = () => {
     const ex = currentDay.exercises[exIndex];
     const currentSets = ensureSetsConfig(ex).map((s) => ({
       ...s,
-      targetReps: reps,
+      targetRepsMin: repsMin,
+      targetRepsMax: repsMax,
+      targetReps: repsMax,
     }));
 
     ex.setsConfig = currentSets;
-    ex.targetRepsMin = reps;
-    ex.targetRepsMax = reps;
+    ex.targetRepsMin = repsMin;
+    ex.targetRepsMax = repsMax;
     setDays(updated);
   };
 
@@ -560,22 +728,34 @@ export const RoutineEditorPage: React.FC = () => {
 
             const setsConfig: RoutineSetDetail[] =
               aiEx.series && aiEx.series.length > 0
-                ? aiEx.series.map((s, sIdx) => ({
-                    setNumber: sIdx + 1,
-                    targetReps: s.reps || 10,
-                    targetWeight: s.peso || 0,
-                  }))
+                ? aiEx.series.map((s, sIdx) => {
+                    const rMin = (s as any).repsMin || s.reps || 8;
+                    const rMax = (s as any).repsMax || s.reps || 10;
+                    return {
+                      setNumber: sIdx + 1,
+                      targetRepsMin: rMin,
+                      targetRepsMax: rMax,
+                      targetReps: s.reps || rMax,
+                      targetWeight: s.peso || 0,
+                    };
+                  })
                 : Array.from({ length: 4 }, (_, sIdx) => ({
                     setNumber: sIdx + 1,
+                    targetRepsMin: 8,
+                    targetRepsMax: 10,
                     targetReps: 10,
                     targetWeight: 0,
                   }));
 
             // Si los pesos o repeticiones varían entre series, activar el modo de desglose individual
             const firstWeight = setsConfig[0]?.targetWeight ?? 0;
-            const firstReps = setsConfig[0]?.targetReps ?? 10;
+            const firstRepsMin = setsConfig[0]?.targetRepsMin ?? 8;
+            const firstRepsMax = setsConfig[0]?.targetRepsMax ?? 10;
             const varies = setsConfig.some(
-              (s) => s.targetWeight !== firstWeight || s.targetReps !== firstReps
+              (s) =>
+                s.targetWeight !== firstWeight ||
+                s.targetRepsMin !== firstRepsMin ||
+                s.targetRepsMax !== firstRepsMax
             );
             if (varies) {
               customMap[dayExId] = true;
@@ -606,8 +786,8 @@ export const RoutineEditorPage: React.FC = () => {
               exercise: finalExercise,
               exerciseOrder: exIdx + 1,
               targetSets: setsConfig.length,
-              targetRepsMin: setsConfig[0]?.targetReps ?? 10,
-              targetRepsMax: setsConfig[0]?.targetReps ?? 10,
+              targetRepsMin: setsConfig[0]?.targetRepsMin ?? 8,
+              targetRepsMax: setsConfig[0]?.targetRepsMax ?? 10,
               targetWeight: setsConfig[0]?.targetWeight ?? 0,
               restSeconds: 90,
               notes: '',
@@ -659,8 +839,10 @@ export const RoutineEditorPage: React.FC = () => {
             ...ex,
             targetSets: sets.length,
             targetWeight: sets[0]?.targetWeight ?? ex.targetWeight ?? 0,
-            targetRepsMin: sets[0]?.targetReps ?? ex.targetRepsMin ?? 10,
-            targetRepsMax: sets[0]?.targetReps ?? ex.targetRepsMax ?? 10,
+            targetRepsMin:
+              sets[0]?.targetRepsMin ?? sets[0]?.targetReps ?? ex.targetRepsMin ?? 8,
+            targetRepsMax:
+              sets[0]?.targetRepsMax ?? sets[0]?.targetReps ?? ex.targetRepsMax ?? 10,
             setsConfig: sets,
           };
         }),
@@ -678,6 +860,14 @@ export const RoutineEditorPage: React.FC = () => {
       };
 
       await routineService.saveRoutine(payload, user?.id);
+
+      // Limpiar borrador de localStorage al guardar con éxito
+      const draftKey = getDraftStorageKey(id && id !== 'new' ? id : undefined);
+      localStorage.removeItem(draftKey);
+      if (isEditing) {
+        localStorage.removeItem(getDraftStorageKey(undefined));
+      }
+
       navigate('/routines');
     } catch (err) {
       console.error('Error saving routine:', err);
@@ -814,7 +1004,7 @@ export const RoutineEditorPage: React.FC = () => {
                   <button
                     key={sug.title}
                     type="button"
-                    onClick={() => setAiPrompt(sug.text)}
+                    onClick={() => setAiPrompt(sug.prompt)}
                     className="px-2.5 py-1 rounded-xl bg-slate-900 border border-gym-border hover:border-emerald-500 text-[11px] font-semibold text-gray-300 hover:text-emerald-400 transition-colors"
                   >
                     💡 {sug.title}
@@ -1189,7 +1379,11 @@ export const RoutineEditorPage: React.FC = () => {
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          handleCopyRepsToAll(exIdx, sets[0]?.targetReps ?? 10)
+                                          handleCopyRepsToAll(
+                                            exIdx,
+                                            sets[0]?.targetRepsMin ?? sets[0]?.targetReps ?? 8,
+                                            sets[0]?.targetRepsMax ?? sets[0]?.targetReps ?? 10
+                                          )
                                         }
                                         className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1 hover:underline transition-colors"
                                         title="Copiar las repeticiones de la Serie 1 a todas las demás"
@@ -1211,11 +1405,12 @@ export const RoutineEditorPage: React.FC = () => {
                               </div>
 
                               {/* Encabezado de columnas del desglose */}
-                              <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-400 px-1 uppercase tracking-wider">
-                                <div className="col-span-2 text-center">Serie</div>
-                                <div className="col-span-4 text-center">Reps</div>
-                                <div className="col-span-4 text-center">Peso (kg)</div>
-                                <div className="col-span-2 text-center">Borrar</div>
+                              <div className="grid grid-cols-12 gap-1.5 sm:gap-2 text-[10px] font-bold text-gray-400 px-1 uppercase tracking-wider text-center">
+                                <div className="col-span-2">Serie</div>
+                                <div className="col-span-3">Reps Mín</div>
+                                <div className="col-span-3">Reps Máx</div>
+                                <div className="col-span-3">Peso (kg)</div>
+                                <div className="col-span-1"></div>
                               </div>
 
                               {/* Filas de Series con inputs fluidos */}
@@ -1223,7 +1418,7 @@ export const RoutineEditorPage: React.FC = () => {
                                 {sets.map((set, setIdx) => (
                                   <div
                                     key={set.setNumber}
-                                    className="grid grid-cols-12 gap-2 items-center bg-gym-card/80 hover:bg-gym-card p-1.5 rounded-xl border border-gym-border/50 transition-colors"
+                                    className="grid grid-cols-12 gap-1.5 sm:gap-2 items-center bg-gym-card/80 hover:bg-gym-card p-1.5 rounded-xl border border-gym-border/50 transition-colors"
                                   >
                                     <div className="col-span-2 text-center">
                                       <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-900 border border-gym-border text-xs font-black text-emerald-400">
@@ -1231,11 +1426,27 @@ export const RoutineEditorPage: React.FC = () => {
                                       </span>
                                     </div>
 
-                                    <div className="col-span-4">
+                                    <div className="col-span-3">
                                       <FlexibleNumericInput
-                                        value={set.targetReps}
+                                        value={set.targetRepsMin ?? set.targetReps ?? 8}
                                         onChange={(val) =>
-                                          handleUpdateSetField(exIdx, setIdx, 'targetReps', val)
+                                          handleUpdateSetField(exIdx, setIdx, 'targetRepsMin', val)
+                                        }
+                                        min={1}
+                                        max={100}
+                                        step={1}
+                                        fallbackValue={8}
+                                        placeholder="8"
+                                        autoSelectOnFocus
+                                        className="w-full text-center font-black text-white bg-slate-900 border border-gym-border rounded-lg py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
+                                      />
+                                    </div>
+
+                                    <div className="col-span-3">
+                                      <FlexibleNumericInput
+                                        value={set.targetRepsMax ?? set.targetReps ?? 10}
+                                        onChange={(val) =>
+                                          handleUpdateSetField(exIdx, setIdx, 'targetRepsMax', val)
                                         }
                                         min={1}
                                         max={100}
@@ -1247,7 +1458,7 @@ export const RoutineEditorPage: React.FC = () => {
                                       />
                                     </div>
 
-                                    <div className="col-span-4">
+                                    <div className="col-span-3">
                                       <FlexibleNumericInput
                                         value={set.targetWeight}
                                         onChange={(val) =>
@@ -1263,7 +1474,7 @@ export const RoutineEditorPage: React.FC = () => {
                                       />
                                     </div>
 
-                                    <div className="col-span-2 flex justify-center">
+                                    <div className="col-span-1 flex justify-center">
                                       <button
                                         type="button"
                                         disabled={sets.length <= 1}

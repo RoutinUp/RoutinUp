@@ -62,8 +62,8 @@ export const SetCard: React.FC<SetCardProps> = ({
         </div>
       </div>
 
-      {/* 2. Ilustración Anatómica Optimizada para Móvil */}
-      <div className="my-2 h-24 sm:h-36 max-h-[140px] rounded-2xl overflow-hidden bg-slate-900 border border-gym-border/50 flex-shrink-0">
+      {/* 2. Ilustración Anatómica */}
+      <div className="my-3 h-40 sm:h-52 rounded-2xl overflow-hidden bg-slate-900 border border-gym-border/50 flex-shrink-0">
         <ExerciseImage
           imageUrl={card.exercise.imageUrl}
           name={card.exercise.name}

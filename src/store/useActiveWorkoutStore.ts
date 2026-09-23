@@ -83,7 +83,13 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
           for (let setNum = 1; setNum <= totalSets; setNum++) {
             const specificSet = dayEx.setsConfig?.find((s) => s.setNumber === setNum);
             const targetWeight = specificSet !== undefined ? specificSet.targetWeight : (dayEx.targetWeight || 0);
-            const targetReps = specificSet !== undefined ? specificSet.targetReps : (dayEx.targetRepsMax || 10);
+            const targetRepsMin = specificSet !== undefined
+              ? (specificSet.targetRepsMin ?? specificSet.targetReps ?? dayEx.targetRepsMin)
+              : dayEx.targetRepsMin;
+            const targetRepsMax = specificSet !== undefined
+              ? (specificSet.targetRepsMax ?? specificSet.targetReps ?? dayEx.targetRepsMax)
+              : dayEx.targetRepsMax;
+            const targetReps = targetRepsMax;
 
             // 1. Tarjeta de Serie
             const setCard: SetCardData = {
@@ -96,8 +102,8 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
               totalExercisesInDay: totalExercises,
               setNumber: setNum,
               totalSets,
-              targetRepsMin: specificSet ? specificSet.targetReps : dayEx.targetRepsMin,
-              targetRepsMax: specificSet ? specificSet.targetReps : dayEx.targetRepsMax,
+              targetRepsMin,
+              targetRepsMax,
               targetWeight,
               restSeconds: dayEx.restSeconds,
               notes: dayEx.notes,

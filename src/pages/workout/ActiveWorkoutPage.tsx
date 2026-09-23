@@ -90,9 +90,9 @@ export const ActiveWorkoutPage: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-gym-bg flex flex-col overflow-y-auto overflow-x-hidden">
+    <div className="min-h-screen w-full bg-gym-bg flex flex-col selection:bg-emerald-500 selection:text-black">
       {/* 1. Header Minimalista de Entrenamiento Activo (Fijo arriba) */}
-      <header className="sticky top-0 z-30 px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gym-bg/95 backdrop-blur-md border-b border-gym-border/40 flex items-center justify-between flex-shrink-0">
+      <header className="sticky top-0 z-30 px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gym-bg/95 backdrop-blur-md border-b border-gym-border/40 flex items-center justify-between flex-shrink-0 shadow-sm">
         <button
           type="button"
           onClick={() => setIsCancelConfirmOpen(true)}
@@ -126,7 +126,7 @@ export const ActiveWorkoutPage: React.FC = () => {
       </header>
 
       {/* 2. Área Central: Mazo de Tarjetas Deslizables con flujo vertical nativo */}
-      <main className="flex-1 w-full max-w-md mx-auto px-3 py-2 sm:px-4 sm:py-3 flex flex-col">
+      <main className="flex-1 w-full max-w-md mx-auto px-3.5 py-3 sm:px-4 sm:py-4 flex flex-col pb-8">
         {cards.length > 0 && (
           <SwipeableDeck
             cards={cards}

@@ -92,8 +92,8 @@ export const SwipeableDeck: React.FC<SwipeableDeckProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* 3. Controles visuales accesibles inferiores para navegar con o sin swipe (Fijos abajo) */}
-      <div className="sticky bottom-0 z-20 bg-gym-bg/95 backdrop-blur-md flex items-center justify-between gap-3 py-2.5 mt-2.5 border-t border-gym-border/40 px-1">
+      {/* 3. Controles visuales accesibles inferiores para navegar con o sin swipe */}
+      <div className="flex items-center justify-between gap-3 py-3 mt-3 border-t border-gym-border/40 px-1">
         <button
           type="button"
           onClick={onPrev}
