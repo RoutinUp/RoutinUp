@@ -7,6 +7,8 @@ import { useActiveWorkoutStore } from '../../store/useActiveWorkoutStore';
 import { WorkoutRoutine, WorkoutDay } from '../../types/routine';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
+import { Card } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
 import { Plus, Play, Calendar, Trash2, Edit3, ChevronDown, ChevronUp, Dumbbell, Star, BookOpen } from 'lucide-react';
 import { CreateRoutineOptionsModal } from '../../components/routines/CreateRoutineOptionsModal';
 import { ExerciseLibraryPage } from '../exercises/ExerciseLibraryPage';
@@ -224,9 +226,9 @@ export const RoutinesListPage: React.FC = () => {
           {routines.map((routine) => {
             const isExpanded = expandedRoutineId === routine.id;
             return (
-              <div
+              <Card
                 key={routine.id}
-                className="rounded-3xl bg-gym-card border border-gym-border/80 overflow-hidden transition-all shadow-md"
+                className="overflow-hidden border-[#27272A] bg-[#18181B] transition-all shadow-sm"
               >
                 {/* Header de la Rutina */}
                 <div
@@ -234,20 +236,20 @@ export const RoutinesListPage: React.FC = () => {
                   className="p-4 flex items-center justify-between cursor-pointer select-none"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <div className="w-10 h-10 rounded-2xl bg-gym-primary/10 border border-gym-primary/20 flex items-center justify-center text-gym-primary">
                       <Dumbbell className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-base font-black text-white">{routine.name}</h3>
+                        <h3 className="text-base font-bold text-zinc-100">{routine.name}</h3>
                         {routine.isActive && (
-                          <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          <Badge variant="default" className="gap-1">
+                            <Star className="w-3 h-3 fill-current text-gym-primary" />
                             Activa
-                          </span>
+                          </Badge>
                         )}
                       </div>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-zinc-400">
                         {routine.days.length} {routine.days.length === 1 ? 'día' : 'días'} de entrenamiento
                       </span>
                     </div>
@@ -262,17 +264,17 @@ export const RoutinesListPage: React.FC = () => {
                       }}
                       className={`p-2 rounded-xl transition-all ${
                         routine.isActive
-                          ? 'text-amber-400 bg-amber-500/15 border border-amber-500/30 shadow-sm'
-                          : 'text-gray-500 hover:text-amber-400 hover:bg-slate-800'
+                          ? 'text-gym-primary bg-gym-primary/10 border border-gym-primary/30 shadow-sm'
+                          : 'text-zinc-500 hover:text-gym-primary hover:bg-[#27272A]'
                       }`}
                       title={routine.isActive ? 'Rutina activa actualmente' : 'Marcar como rutina activa'}
                     >
-                      <Star className={`w-4 h-4 ${routine.isActive ? 'fill-amber-400 text-amber-400' : ''}`} />
+                      <Star className={`w-4 h-4 ${routine.isActive ? 'fill-current text-gym-primary' : ''}`} />
                     </button>
                     <Link
                       to={`/routines/${routine.id}/edit`}
                       onClick={(e) => e.stopPropagation()}
-                      className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-slate-800 transition-colors"
+                      className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-[#27272A] transition-colors"
                       title="Editar rutina"
                     >
                       <Edit3 className="w-4 h-4" />
@@ -283,12 +285,12 @@ export const RoutinesListPage: React.FC = () => {
                         e.stopPropagation();
                         setDeleteRoutineId(routine.id);
                       }}
-                      className="p-2 rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      className="p-2 rounded-xl text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                       title="Eliminar rutina"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
-                    <div className="p-1 text-gray-400">
+                    <div className="p-1 text-zinc-400">
                       {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                     </div>
                   </div>
@@ -296,15 +298,15 @@ export const RoutinesListPage: React.FC = () => {
 
                 {/* Días y Ejercicios Desplegados */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 pt-1 space-y-2.5 border-t border-gym-border/40">
+                  <div className="px-4 pb-4 pt-1 space-y-2.5 border-t border-[#27272A]">
                     {routine.days.map((day) => (
                       <div
                         key={day.id}
-                        className="p-3.5 rounded-2xl bg-gym-bg/80 border border-gym-border/60 flex items-center justify-between"
+                        className="p-3.5 rounded-2xl bg-[#09090B] border border-[#27272A] flex items-center justify-between"
                       >
                         <div>
-                          <h4 className="text-sm font-bold text-white">{day.name}</h4>
-                          <span className="text-xs text-gray-400 block mt-0.5">
+                          <h4 className="text-sm font-bold text-zinc-100">{day.name}</h4>
+                          <span className="text-xs text-zinc-400 block mt-0.5">
                             {day.exercises.length} ejercicios configurados
                           </span>
                         </div>
@@ -321,7 +323,7 @@ export const RoutinesListPage: React.FC = () => {
                     ))}
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>

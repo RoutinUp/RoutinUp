@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Dumbbell, User, LogOut } from 'lucide-react';
 import { APP_CONFIG } from '../../config/app.config';
 import { useAuthStore } from '../../store/useAuthStore';
+import { getUserDisplayName, getUserAvatarUrl, getUserInitials } from '../../utils/user';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -15,8 +16,9 @@ export const Header: React.FC<HeaderProps> = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const displayName = profile?.displayName || user?.user_metadata?.full_name || 'Atleta';
-  const initial = displayName.charAt(0).toUpperCase() || 'A';
+  const displayName = getUserDisplayName(user, profile) || 'Usuario';
+  const avatarUrl = getUserAvatarUrl(user, profile);
+  const initials = getUserInitials(user, profile);
 
   // Cerrar el dropdown al hacer clic fuera del componente
   useEffect(() => {
@@ -77,22 +79,22 @@ export const Header: React.FC<HeaderProps> = () => {
             className="w-8 h-8 rounded-full bg-[#18181B] border border-[#27272A] hover:border-gym-primary/60 transition-all overflow-hidden flex items-center justify-center text-zinc-100 font-bold text-xs select-none shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gym-primary/30"
             title={displayName}
           >
-            {profile?.avatarUrl ? (
+            {avatarUrl ? (
               <img
-                src={profile.avatarUrl}
+                src={avatarUrl}
                 alt={displayName}
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-gym-primary font-bold">{initial}</span>
+              <span className="text-gym-primary font-bold text-[11px]">{initials}</span>
             )}
           </button>
 
           {/* Menú Desplegable (DropdownMenu) */}
           {isMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 py-1.5 rounded-[16px] bg-[#18181B] border border-[#27272A] shadow-2xl z-50 animate-fade-in backdrop-blur-xl">
+            <div className="absolute right-0 top-full mt-2 w-48 py-1.5 rounded-2xl bg-[#18181B] border border-[#27272A] shadow-2xl z-50 animate-fade-in backdrop-blur-xl">
               <div className="px-3.5 py-2 border-b border-[#27272A] mb-1">
-                <span className="text-[11px] font-medium text-zinc-400 block truncate">
+                <span className="text-[11px] font-medium text-zinc-300 block truncate">
                   {displayName}
                 </span>
                 <span className="text-[9px] text-zinc-500 font-mono block">

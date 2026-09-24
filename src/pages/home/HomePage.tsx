@@ -12,7 +12,10 @@ import { CreateRoutineOptionsModal } from '../../components/routines/CreateRouti
 import { PRESET_OPTIONS } from '../routines/RoutinesListPage';
 import { APP_CONFIG } from '../../config/app.config';
 import { formatDurationHuman, formatDateSpanish, formatWeight } from '../../utils/formatters';
-import { Play, Plus, Dumbbell, Calendar, History, ArrowRight, Flame, Trophy, Star } from 'lucide-react';
+import { getUserGreeting } from '../../utils/user';
+import { Card, CardContent } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Play, Plus, Dumbbell, Calendar, History, ArrowRight, Flame, Star } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,8 +28,6 @@ export const HomePage: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [importingIndex, setImportingIndex] = useState<number | null>(null);
-
-  const displayName = profile?.displayName || user?.user_metadata?.full_name || 'Atleta';
 
   const loadHomeData = async () => {
     try {
@@ -89,45 +90,47 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Saludo y Encabezado Personalizado */}
+    <div className="space-y-6 pb-20 select-none">
+      {/* Saludo y Encabezado Dinámico con Supabase */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-xs font-bold text-gym-lime uppercase tracking-wider block">
+          <span className="text-[11px] font-bold text-gym-primary uppercase tracking-widest block">
             Bienvenido a {APP_CONFIG.name}
           </span>
-          <h1 className="text-2xl font-black text-white tracking-tight">
-            Hola, {displayName} 👋
+          <h1 className="text-2xl sm:text-3xl font-black text-zinc-100 tracking-tight mt-0.5">
+            {getUserGreeting(user, profile)}
           </h1>
         </div>
       </div>
 
       {/* Si hay un entrenamiento activo minimizado */}
       {isActive && (
-        <div className="p-4 rounded-3xl bg-gym-lime/15 border border-gym-lime/30 shadow-glow-lime flex items-center justify-between">
-          <div>
-            <span className="text-[11px] font-bold text-gym-lime uppercase tracking-widest block">
-              Entrenamiento en Progreso
-            </span>
-            <span className="text-base font-black text-white">Continúa tu rutina activa</span>
-          </div>
-          <Button size="sm" variant="primary" onClick={handleResumeWorkout}>
-            CONTINUAR
-          </Button>
-        </div>
+        <Card className="border-gym-primary/40 bg-gym-primary/10 shadow-sm">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-gym-primary uppercase tracking-widest block">
+                Entrenamiento en Progreso
+              </span>
+              <span className="text-sm sm:text-base font-bold text-zinc-100">Continúa tu rutina activa</span>
+            </div>
+            <Button size="sm" variant="primary" onClick={handleResumeWorkout}>
+              CONTINUAR
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* ESTADO INICIAL SI NO HAY RUTINA ACTIVA */}
       {!activeRoutine ? (
-        <div className="rounded-3xl bg-gym-card border border-gym-border/90 p-6 sm:p-8 text-center space-y-5 shadow-xl">
-          <div className="w-16 h-16 rounded-3xl bg-gym-lime/15 border border-gym-lime/30 flex items-center justify-center text-gym-lime mx-auto shadow-glow-lime">
-            <Dumbbell className="w-8 h-8" />
+        <Card className="p-6 sm:p-8 text-center space-y-5">
+          <div className="w-14 h-14 rounded-2xl bg-gym-primary/10 border border-gym-primary/20 flex items-center justify-center text-gym-primary mx-auto">
+            <Dumbbell className="w-7 h-7" />
           </div>
           <div className="space-y-1.5 max-w-xs mx-auto">
-            <h3 className="text-lg font-black text-white tracking-tight">
+            <h3 className="text-lg font-black text-zinc-100 tracking-tight">
               {routines.length === 0 ? 'No tienes ninguna rutina creada' : 'No tienes una rutina activa'}
             </h3>
-            <p className="text-xs text-gray-400 leading-relaxed">
+            <p className="text-xs text-zinc-400 leading-relaxed">
               {routines.length === 0
                 ? 'Crea tu propia rutina con series y repeticiones a medida, o comienza al instante con una plantilla probada.'
                 : 'Marca con una estrella tu rutina preferida en Mis Rutinas para ver tu próximo entrenamiento aquí.'}
@@ -152,79 +155,80 @@ export const HomePage: React.FC = () => {
               </Link>
             )}
           </div>
-        </div>
+        </Card>
       ) : (
         <>
-          {/* TARJETA GRANDE: TU PRÓXIMA RUTINA */}
+          {/* TARJETA GRANDE: TU PRÓXIMA RUTINA (shadcn Card) */}
           {nextDay && (
-            <div className="relative overflow-hidden rounded-[16px] bg-[#18181B] border border-[#27272A] shadow-sm p-5">
-              <div className="absolute top-0 right-0 p-6 opacity-5">
+            <Card className="relative overflow-hidden border-[#27272A] bg-[#18181B] shadow-sm">
+              <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
                 <Dumbbell className="w-32 h-32 text-gym-primary" />
               </div>
 
-              <div className="relative z-10 space-y-4">
+              <CardContent className="p-5 sm:p-6 space-y-4 relative z-10">
                 <div>
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gym-primary/10 text-gym-primary border border-gym-primary/20">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <Badge variant="default" className="gap-1">
                       <Flame className="w-3 h-3" />
                       TU PRÓXIMA RUTINA
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700/50">
+                    </Badge>
+                    <Badge variant="secondary" className="gap-1">
                       <Star className="w-2.5 h-2.5 fill-current" />
                       {activeRoutine.name}
-                    </span>
+                    </Badge>
                   </div>
-                  <h2 className="text-2xl font-black text-zinc-100 mt-1.5 leading-tight">
+                  <h2 className="text-2xl font-black text-zinc-100 mt-1 leading-tight">
                     {nextDay.name}
                   </h2>
-                  <p className="text-xs text-gray-400 font-medium mt-0.5">
-                    {nextDay.exercises.length} ejercicios · ~{Math.round(nextDay.exercises.length * 8.5)} min
+                  <p className="text-xs text-zinc-400 font-medium mt-1">
+                    {nextDay.exercises.length} ejercicios · ~{Math.round(nextDay.exercises.length * 8.5)} min estimados
                   </p>
                 </div>
 
                 {/* Lista previa compacta de ejercicios */}
-                <div className="space-y-1 py-1">
+                <div className="space-y-1.5 py-1">
                   {nextDay.exercises.slice(0, 3).map((ex, idx) => (
-                    <div key={idx} className="flex items-center justify-between gap-2 text-xs text-gray-300">
-                      <span className="font-semibold whitespace-normal break-words [word-break:break-word] flex-1 min-w-0">
+                    <div key={idx} className="flex items-center justify-between gap-2 text-xs text-zinc-300">
+                      <span className="font-medium whitespace-normal break-words [word-break:break-word] flex-1 min-w-0">
                         {idx + 1}. {ex.exercise?.name || 'Ejercicio'}
                       </span>
-                      <span className="text-gray-400 text-[11px] flex-shrink-0">
+                      <span className="text-zinc-500 text-[11px] flex-shrink-0">
                         {ex.targetSets} series · {ex.targetRepsMin}–{ex.targetRepsMax} reps
                       </span>
                     </div>
                   ))}
                   {nextDay.exercises.length > 3 && (
-                    <span className="text-[11px] text-gray-400 block italic">
+                    <span className="text-[11px] text-zinc-500 block italic">
                       + {nextDay.exercises.length - 3} ejercicios más
                     </span>
                   )}
                 </div>
 
-                {/* BOTÓN GIGANTE "INICIAR RUTINA" */}
+                {/* BOTÓN GIGANTE "INICIAR RUTINA" con bordes redondeados (16px) e impacto visual */}
                 <Button
                   size="xl"
                   fullWidth
                   variant="primary"
                   onClick={() => handleStartWorkout(nextDay!, activeRoutine.name)}
-                  icon={<Play className="w-6 h-6 fill-current stroke-none" />}
+                  className="rounded-2xl font-black tracking-wider text-zinc-950 bg-gym-primary hover:bg-lime-400 shadow-md hover:shadow-gym-primary/20 py-4 transition-transform active:scale-[0.99]"
+                  icon={<Play className="w-5 h-5 fill-current stroke-none" />}
                 >
                   INICIAR RUTINA
                 </Button>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* SECCIÓN: DÍAS DE LA RUTINA ACTIVA */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
-                <Calendar className="w-5 h-5 text-gym-lime" />
+              <h3 className="text-sm font-black text-zinc-200 tracking-wider uppercase flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-gym-primary" />
                 DÍAS DE {activeRoutine.name.toUpperCase()}
               </h3>
               <Link
                 to="/routines"
-                className="text-xs font-bold text-gym-lime hover:text-lime-300 transition-colors flex items-center gap-1"
+                className="text-xs font-bold text-gym-primary hover:text-lime-400 transition-colors flex items-center gap-1"
               >
                 Cambiar rutina
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -238,29 +242,29 @@ export const HomePage: React.FC = () => {
                 return (
                   <div
                     key={d.id}
-                    className={`flex items-center justify-between p-4 rounded-3xl border transition-all ${
+                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
                       isNext
-                        ? 'bg-gym-card border-gym-lime/40 shadow-sm'
-                        : 'bg-gym-card/60 border-gym-border/60 hover:border-gray-500'
+                        ? 'bg-[#18181B] border-gym-primary/40 shadow-sm'
+                        : 'bg-[#18181B] border-[#27272A] hover:border-zinc-700'
                     }`}
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-bold text-white">{d.name}</h4>
+                        <h4 className="text-sm font-bold text-zinc-100">{d.name}</h4>
                         {isNext && (
-                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gym-lime/15 text-gym-lime border border-gym-lime/30">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gym-primary/10 text-gym-primary border border-gym-primary/20">
                             Siguiente
                           </span>
                         )}
                       </div>
-                      <span className="text-[11px] text-gray-400 font-medium">
+                      <span className="text-[11px] text-zinc-400 font-medium">
                         {d.exercises.length} {d.exercises.length === 1 ? 'ejercicio' : 'ejercicios'}
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleStartWorkout(d, activeRoutine.name)}
-                      className="px-3.5 py-1.5 rounded-full bg-gym-lime/15 text-gym-lime border border-gym-lime/30 text-xs font-bold hover:bg-gym-lime hover:text-slate-950 transition-all flex items-center gap-1 shadow-sm"
+                      className="px-3.5 py-1.5 rounded-full bg-gym-primary/10 text-gym-primary border border-gym-primary/20 text-xs font-bold hover:bg-gym-primary hover:text-zinc-950 transition-all flex items-center gap-1 shadow-sm"
                     >
                       <Play className="w-3 h-3 fill-current stroke-none" />
                       Iniciar
@@ -289,42 +293,42 @@ export const HomePage: React.FC = () => {
       {/* SECCIÓN: ENTRENAMIENTOS RECIENTES */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
-            <History className="w-5 h-5 text-emerald-400" />
+          <h3 className="text-sm font-black text-zinc-200 tracking-wider uppercase flex items-center gap-1.5">
+            <History className="w-4 h-4 text-gym-primary" />
             ENTRENAMIENTOS RECIENTES
           </h3>
           <Link
             to="/history"
-            className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+            className="text-xs font-bold text-gym-primary hover:text-lime-400 transition-colors"
           >
             Historial completo
           </Link>
         </div>
 
         {recentSessions.length === 0 ? (
-          <div className="text-center py-6 px-4 rounded-2xl bg-gym-card border border-gym-border/60">
-            <p className="text-sm text-gray-400">Aún no has registrado ningún entrenamiento.</p>
-            <p className="text-xs text-gray-400 mt-1">¡Comienza tu primera sesión para construir tu historial!</p>
-          </div>
+          <Card className="text-center py-6 px-4">
+            <p className="text-sm text-zinc-400">Aún no has registrado ningún entrenamiento.</p>
+            <p className="text-xs text-zinc-500 mt-1">¡Comienza tu primera sesión para construir tu historial!</p>
+          </Card>
         ) : (
           <div className="space-y-2.5">
             {recentSessions.slice(0, 3).map((s) => (
               <div
                 key={s.id}
-                className="p-3.5 rounded-2xl bg-gym-card border border-gym-border/60 flex items-center justify-between"
+                className="p-3.5 rounded-2xl bg-[#18181B] border border-[#27272A] flex items-center justify-between hover:border-zinc-700 transition-colors"
               >
                 <div>
-                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-gym-primary uppercase tracking-wider block">
                     {formatDateSpanish(s.startedAt)}
                   </span>
-                  <h4 className="text-sm font-bold text-white">{s.routineName} · {s.dayName}</h4>
-                  <span className="text-xs text-gray-400">
+                  <h4 className="text-sm font-bold text-zinc-100">{s.routineName} · {s.dayName}</h4>
+                  <span className="text-xs text-zinc-400">
                     {formatDurationHuman(s.durationSeconds)} · {formatWeight(s.totalVolume)}
                   </span>
                 </div>
                 <Link
                   to={`/history/${s.id}`}
-                  className="p-2 rounded-xl text-gray-400 hover:text-white bg-slate-800/80 hover:bg-slate-700 transition-colors"
+                  className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 bg-[#27272A] hover:bg-zinc-700 transition-colors"
                 >
                   <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -343,70 +347,54 @@ export const HomePage: React.FC = () => {
         onSelectTemplate={() => setIsTemplateModalOpen(true)}
       />
 
-      {/* Modal Plantillas Predeterminadas */}
+      {/* Modal Selector de Plantillas Predeterminadas */}
       <Modal
         isOpen={isTemplateModalOpen}
-        onClose={() => importingIndex === null && setIsTemplateModalOpen(false)}
-        title="Plantillas Predeterminadas de 3 Días"
-        maxWidth="lg"
+        onClose={() => setIsTemplateModalOpen(false)}
+        title="Plantillas de Rutina (3 Días)"
+        maxWidth="md"
       >
         <div className="space-y-4">
-          <p className="text-xs text-gray-400">
-            Selecciona una rutina completa prediseñada con ejercicios, series, repeticiones y cargas iniciales:
+          <p className="text-xs text-zinc-400">
+            Selecciona una rutina probada para importarla a tu cuenta:
           </p>
 
           <div className="space-y-3">
             {PRESET_OPTIONS.map((preset) => (
               <div
                 key={preset.index}
-                className="p-4 rounded-2xl bg-gym-bg border border-gym-border/80 hover:border-emerald-500/50 transition-all flex flex-col justify-between gap-3 shadow-sm"
+                className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] space-y-2.5 hover:border-zinc-700 transition-all"
               >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <h4 className="text-sm font-black text-white">{preset.title}</h4>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {preset.badge}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-300 leading-relaxed mb-2.5">
-                    {preset.description}
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {preset.days.map((day, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[10px] bg-slate-900 text-gray-300 px-2 py-0.5 rounded-lg border border-gym-border font-medium"
-                      >
-                        {day}
-                      </span>
-                    ))}
-                  </div>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-zinc-100">{preset.title}</h4>
+                  <Badge variant="default">
+                    {preset.badge}
+                  </Badge>
                 </div>
-
-                <div className="pt-2 flex justify-end border-t border-gym-border/40">
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  {preset.description}
+                </p>
+                <div className="space-y-1 py-1">
+                  {preset.days.map((dayName, dIdx) => (
+                    <div key={dIdx} className="text-[11px] text-zinc-400 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-gym-primary" />
+                      <span>{dayName}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="pt-1">
                   <Button
                     size="sm"
+                    fullWidth
                     variant="primary"
                     isLoading={importingIndex === preset.index}
-                    disabled={importingIndex !== null}
                     onClick={() => handleImportPreset(preset.index)}
                   >
-                    Cargar Esta Plantilla
+                    USAR ESTA PLANTILLA
                   </Button>
                 </div>
               </div>
             ))}
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={importingIndex !== null}
-              onClick={() => setIsTemplateModalOpen(false)}
-            >
-              Cerrar
-            </Button>
           </div>
         </div>
       </Modal>

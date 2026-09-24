@@ -5,6 +5,8 @@ import { Exercise, MuscleGroup, CreateExerciseInput } from '../../types/exercise
 import { ExerciseImage } from '../../components/common/ExerciseImage';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
+import { Input } from '../../components/ui/input';
+import { Badge } from '../../components/ui/badge';
 import { Search, Plus, Dumbbell, Filter, Info, ChevronRight, Check } from 'lucide-react';
 
 const MUSCLE_FILTERS: { id: MuscleGroup | 'todos'; label: string }[] = [
@@ -132,13 +134,13 @@ export const ExerciseLibraryPage: React.FC<ExerciseLibraryPageProps> = ({ embedd
 
       {/* Buscador */}
       <div className="relative">
-        <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-        <input
+        <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 z-10" />
+        <Input
           type="text"
           placeholder="Buscar ejercicio por nombre..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-gym-card border border-gym-border rounded-2xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gym-lime transition-colors"
+          className="pl-10"
         />
       </div>
 
@@ -152,8 +154,8 @@ export const ExerciseLibraryPage: React.FC<ExerciseLibraryPageProps> = ({ embedd
             className={`
               px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all select-none
               ${selectedMuscle === m.id
-                ? 'bg-gym-lime text-slate-950 font-black shadow-glow-lime'
-                : 'bg-gym-card text-gray-300 border border-gym-border hover:border-gray-500'
+                ? 'bg-gym-primary text-zinc-950 font-bold shadow-sm'
+                : 'bg-[#18181B] text-zinc-400 border border-[#27272A] hover:border-zinc-700'
               }
             `}
           >
@@ -164,10 +166,10 @@ export const ExerciseLibraryPage: React.FC<ExerciseLibraryPageProps> = ({ embedd
 
       {/* Lista de Ejercicios */}
       {filteredExercises.length === 0 ? (
-        <div className="text-center py-10 rounded-3xl bg-gym-card border border-gym-border/60">
-          <Dumbbell className="w-10 h-10 text-gray-600 mx-auto mb-2" />
-          <p className="text-sm font-bold text-gray-400">No se encontraron ejercicios</p>
-          <p className="text-xs text-gray-500 mt-1">Prueba con otro filtro o crea uno nuevo</p>
+        <div className="text-center py-10 rounded-2xl bg-[#18181B] border border-[#27272A]">
+          <Dumbbell className="w-10 h-10 text-zinc-600 mx-auto mb-2" />
+          <p className="text-sm font-bold text-zinc-400">No se encontraron ejercicios</p>
+          <p className="text-xs text-zinc-500 mt-1">Prueba con otro filtro o crea uno nuevo</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -175,10 +177,10 @@ export const ExerciseLibraryPage: React.FC<ExerciseLibraryPageProps> = ({ embedd
             <div
               key={ex.id}
               onClick={() => setSelectedExercise(ex)}
-              className="p-3.5 rounded-3xl bg-gym-card border border-gym-border/70 hover:border-gym-lime/50 transition-all cursor-pointer flex items-center gap-3.5 group shadow-sm"
+              className="p-3.5 rounded-2xl bg-[#18181B] border border-[#27272A] hover:border-gym-primary/50 transition-all cursor-pointer flex items-center gap-3.5 group shadow-sm"
             >
               {/* Miniatura Ilustración Anatómica */}
-              <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-900 border border-gym-border/80">
+              <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-[#09090B] border border-[#27272A]">
                 <ExerciseImage
                   imageUrl={ex.imageUrl}
                   name={ex.name}
@@ -192,24 +194,24 @@ export const ExerciseLibraryPage: React.FC<ExerciseLibraryPageProps> = ({ embedd
               {/* Datos */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-gym-lime px-2 py-0.5 rounded-full bg-gym-lime/10 border border-gym-lime/20">
+                  <Badge variant="default" className="text-[10px]">
                     {ex.mainMuscleGroup}
-                  </span>
+                  </Badge>
                   {ex.isCustom && (
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                    <Badge variant="secondary" className="text-[9px]">
                       Personalizado
-                    </span>
+                    </Badge>
                   )}
                 </div>
-                <h4 className="text-[clamp(0.95rem,3.5vw,1.1rem)] font-bold text-white whitespace-normal break-words [word-break:break-word] group-hover:text-gym-lime transition-colors leading-snug mt-1">
+                <h4 className="text-[clamp(0.95rem,3.5vw,1.1rem)] font-bold text-zinc-100 whitespace-normal break-words [word-break:break-word] group-hover:text-gym-primary transition-colors leading-snug mt-1">
                   {ex.name}
                 </h4>
-                <p className="text-xs text-gray-400 truncate mt-0.5">
+                <p className="text-xs text-zinc-400 truncate mt-0.5">
                   {ex.equipment} · {ex.exerciseType}
                 </p>
               </div>
 
-              <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-gym-lime transition-colors flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-gym-primary transition-colors flex-shrink-0" />
             </div>
           ))}
         </div>

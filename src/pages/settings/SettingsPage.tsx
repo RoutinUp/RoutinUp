@@ -4,14 +4,13 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { APP_CONFIG } from '../../config/app.config';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
+import { Card } from '../../components/ui/card';
+import { getUserDisplayName, getUserAvatarUrl, getUserInitials } from '../../utils/user';
 import {
-  User,
   LogOut,
   Edit3,
   Ruler,
   Weight,
-  Camera,
-  CheckCircle2,
   AlertCircle
 } from 'lucide-react';
 
@@ -77,44 +76,46 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const displayName = profile?.displayName || user?.user_metadata?.full_name || 'Atleta';
-  const email = user?.email || 'atleta@routinup.app';
+  const displayName = getUserDisplayName(user, profile) || 'Usuario';
+  const email = user?.email || '';
+  const avatarUrl = getUserAvatarUrl(user, profile);
+  const initials = getUserInitials(user, profile);
 
   return (
-    <div className="space-y-4 pb-20">
+    <div className="space-y-4 pb-20 select-none">
       <div>
-        <h1 className="text-2xl font-black text-white tracking-tight">Ajustes & Perfil</h1>
-        <p className="text-xs text-gray-400">Configuración general y datos biométricos</p>
+        <h1 className="text-2xl font-black text-zinc-100 tracking-tight">Ajustes & Perfil</h1>
+        <p className="text-xs text-zinc-400">Configuración general y datos biométricos</p>
       </div>
 
       {/* Tarjeta de Perfil Real */}
-      <div className="p-4 rounded-3xl bg-gym-card border border-gym-border/80 space-y-3.5 shadow-md">
+      <Card className="p-4 space-y-3.5 border-[#27272A] bg-[#18181B] shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-xl overflow-hidden">
-              {profile?.avatarUrl ? (
+            <div className="w-14 h-14 rounded-2xl bg-gym-primary/10 border border-gym-primary/20 flex items-center justify-center text-gym-primary font-bold text-xl overflow-hidden">
+              {avatarUrl ? (
                 <img
-                  src={profile.avatarUrl}
+                  src={avatarUrl}
                   alt={displayName}
                   className="w-full h-full object-cover"
                 />
               ) : (
-                displayName.charAt(0).toUpperCase()
+                initials
               )}
             </div>
             <div>
-              <h3 className="text-base font-black text-white">{displayName}</h3>
-              <span className="text-xs text-gray-400 block">{email}</span>
+              <h3 className="text-base font-bold text-zinc-100">{displayName}</h3>
+              {email && <span className="text-xs text-zinc-400 block">{email}</span>}
             </div>
           </div>
 
           <button
             type="button"
             onClick={handleOpenEditProfile}
-            className="p-2.5 rounded-2xl bg-slate-800 text-emerald-400 hover:bg-slate-700 hover:text-white border border-gym-border transition-all flex items-center gap-1.5 text-xs font-bold"
+            className="p-2.5 rounded-xl bg-[#27272A] text-zinc-300 hover:text-white hover:bg-zinc-700 border border-[#27272A] transition-all flex items-center gap-1.5 text-xs font-semibold"
             title="Editar perfil"
           >
-            <Edit3 className="w-3.5 h-3.5" />
+            <Edit3 className="w-3.5 h-3.5 text-gym-primary" />
             Editar
           </button>
         </div>
@@ -154,7 +155,7 @@ export const SettingsPage: React.FC = () => {
             </button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Preferencias de Entrenamiento */}
       <div className="p-4 rounded-3xl bg-gym-card border border-gym-border/80 space-y-3">
@@ -233,7 +234,7 @@ export const SettingsPage: React.FC = () => {
       <Modal
         isOpen={isEditProfileModalOpen}
         onClose={() => setIsEditProfileModalOpen(false)}
-        title="Editar Perfil de Atleta"
+        title="Editar Perfil"
         maxWidth="md"
       >
         <form onSubmit={handleSaveProfile} className="space-y-3.5 text-left">
