@@ -17,16 +17,16 @@ export const NutritionPage: React.FC = () => {
         </div>
 
         {/* Píldora de Estado */}
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gym-primary/10 text-gym-primary border border-gym-primary/20 text-xs font-bold uppercase tracking-wider">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#008000]/15 text-[#008000] border border-[#008000]/30 text-xs font-bold uppercase tracking-wider">
           <Sparkles className="w-3 h-3" />
           Próximamente
         </span>
       </div>
 
-      {/* Tarjeta Hero Principal con Estética Dark Minimalist */}
-      <div className="relative overflow-hidden rounded-[16px] bg-[#18181B] border border-[#27272A] p-6 sm:p-7 shadow-sm">
+      {/* Tarjeta Hero Principal con Estética de Bloque */}
+      <div className="relative overflow-hidden rounded-[20px] bg-[#181920] border border-[#272833] p-6 sm:p-7 shadow-sm">
         <div className="relative z-10 space-y-4">
-          <div className="w-12 h-12 rounded-[12px] bg-gym-primary/10 border border-gym-primary/20 flex items-center justify-center text-gym-primary">
+          <div className="w-12 h-12 rounded-2xl bg-[#008000]/15 border border-[#008000]/30 flex items-center justify-center text-[#008000]">
             <Utensils className="w-6 h-6" />
           </div>
 
@@ -39,9 +39,9 @@ export const NutritionPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#09090B] border border-[#27272A] text-xs font-medium text-zinc-400">
-            <BellRing className="w-3.5 h-3.5 text-gym-primary" />
-            <span>Disponible en la próxima actualización de {APP_CONFIG.name}</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#121318] border border-[#272833] text-xs font-medium text-zinc-400">
+            <BellRing className="w-3.5 h-3.5 text-[#008000]" />
+            <span>Disponible en la próxima actualización de Routin<span style={{ color: '#008000' }} className="text-[#008000] font-black">UP</span></span>
           </div>
         </div>
       </div>
@@ -54,16 +54,16 @@ export const NutritionPage: React.FC = () => {
 
         <div className="grid grid-cols-1 gap-3">
           {/* Módulo 1 */}
-          <div className="p-4 rounded-[16px] bg-[#18181B] border border-[#27272A] flex items-center gap-4 hover:border-gym-primary/40 transition-colors group">
-            <div className="w-11 h-11 rounded-[12px] bg-gym-primary/10 text-gym-primary border border-gym-primary/20 flex items-center justify-center flex-shrink-0">
+          <div className="p-4 rounded-[20px] bg-[#181920] border border-[#272833] flex items-center gap-4 hover:border-[#008000]/40 transition-colors group">
+            <div className="w-11 h-11 rounded-2xl bg-[#008000]/15 text-[#008000] border border-[#008000]/30 flex items-center justify-center flex-shrink-0">
               <Flame className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="text-sm font-bold text-zinc-100 group-hover:text-gym-primary transition-colors">
+                <h4 className="text-sm font-bold text-zinc-100 group-hover:text-[#008000] transition-colors">
                   Control de Macros y Calorías
                 </h4>
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gym-primary/10 text-gym-primary border border-gym-primary/20">
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#008000]/15 text-[#008000] border border-[#008000]/30">
                   En desarrollo
                 </span>
               </div>
@@ -71,17 +71,17 @@ export const NutritionPage: React.FC = () => {
                 Registro rápido de proteínas, carbohidratos y grasas con metas ajustadas a tu peso corporal.
               </p>
             </div>
-            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-gym-primary transition-colors flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-[#008000] transition-colors flex-shrink-0" />
           </div>
 
           {/* Módulo 2 */}
-          <div className="p-4 rounded-[16px] bg-[#18181B] border border-[#27272A] flex items-center gap-4 hover:border-gym-primary/40 transition-colors group">
-            <div className="w-11 h-11 rounded-[12px] bg-gym-primary/10 text-gym-primary border border-gym-primary/20 flex items-center justify-center flex-shrink-0">
+          <div className="p-4 rounded-[20px] bg-[#181920] border border-[#272833] flex items-center gap-4 hover:border-[#008000]/40 transition-colors group">
+            <div className="w-11 h-11 rounded-2xl bg-[#008000]/15 text-[#008000] border border-[#008000]/30 flex items-center justify-center flex-shrink-0">
               <Apple className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="text-sm font-bold text-zinc-100 group-hover:text-gym-primary transition-colors">
+                <h4 className="text-sm font-bold text-zinc-100 group-hover:text-[#008000] transition-colors">
                   Planes de Alimentación y Recetas
                 </h4>
                 <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700/50">
@@ -92,17 +92,17 @@ export const NutritionPage: React.FC = () => {
                 Guías de comidas fitness para volumen limpio, definición muscular y recomposición corporal.
               </p>
             </div>
-            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-gym-primary transition-colors flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-[#008000] transition-colors flex-shrink-0" />
           </div>
 
           {/* Módulo 3 */}
-          <div className="p-4 rounded-[16px] bg-[#18181B] border border-[#27272A] flex items-center gap-4 hover:border-gym-primary/40 transition-colors group">
-            <div className="w-11 h-11 rounded-[12px] bg-gym-primary/10 text-gym-primary border border-gym-primary/20 flex items-center justify-center flex-shrink-0">
+          <div className="p-4 rounded-[20px] bg-[#181920] border border-[#272833] flex items-center gap-4 hover:border-[#008000]/40 transition-colors group">
+            <div className="w-11 h-11 rounded-2xl bg-[#008000]/15 text-[#008000] border border-[#008000]/30 flex items-center justify-center flex-shrink-0">
               <Scale className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="text-sm font-bold text-zinc-100 group-hover:text-gym-primary transition-colors">
+                <h4 className="text-sm font-bold text-zinc-100 group-hover:text-[#008000] transition-colors">
                   Gasto Energético Dinámico
                 </h4>
                 <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700/50">
@@ -113,7 +113,7 @@ export const NutritionPage: React.FC = () => {
                 Cálculo del balance energético diario alimentado directamente por tus series y entrenamientos completados.
               </p>
             </div>
-            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-gym-primary transition-colors flex-shrink-0" />
+            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-[#008000] transition-colors flex-shrink-0" />
           </div>
         </div>
       </div>

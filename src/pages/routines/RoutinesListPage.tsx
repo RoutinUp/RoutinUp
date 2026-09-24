@@ -152,13 +152,13 @@ export const RoutinesListPage: React.FC = () => {
       </div>
 
       {/* Selector de Pestañas Superiores (Tabs estilo shadcn) */}
-      <div className="grid grid-cols-2 p-1 rounded-[16px] bg-[#18181B] border border-[#27272A] text-xs font-semibold shadow-sm">
+      <div className="grid grid-cols-2 p-1 rounded-[16px] bg-[#181920] border border-[#272833] text-xs font-semibold shadow-sm">
         <button
           type="button"
           onClick={() => setSearchParams({ tab: 'routines' })}
           className={`py-2 px-3 rounded-[12px] text-center transition-all ${
             activeTab === 'routines'
-              ? 'bg-gym-primary text-zinc-950 font-bold shadow-sm'
+              ? 'bg-[#008000] text-white font-bold shadow-sm'
               : 'text-zinc-400 hover:text-zinc-100 font-medium'
           }`}
         >
@@ -169,7 +169,7 @@ export const RoutinesListPage: React.FC = () => {
           onClick={() => setSearchParams({ tab: 'exercises' })}
           className={`py-2 px-3 rounded-[12px] text-center transition-all ${
             activeTab === 'exercises'
-              ? 'bg-gym-primary text-zinc-950 font-bold shadow-sm'
+              ? 'bg-[#008000] text-white font-bold shadow-sm'
               : 'text-zinc-400 hover:text-zinc-100 font-medium'
           }`}
         >
@@ -228,7 +228,7 @@ export const RoutinesListPage: React.FC = () => {
             return (
               <Card
                 key={routine.id}
-                className="overflow-hidden border-[#27272A] bg-[#18181B] transition-all shadow-sm"
+                className="overflow-hidden border-[#272833] bg-[#181920] transition-all shadow-sm rounded-[20px]"
               >
                 {/* Header de la Rutina */}
                 <div
@@ -236,7 +236,7 @@ export const RoutinesListPage: React.FC = () => {
                   className="p-4 flex items-center justify-between cursor-pointer select-none"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-gym-primary/10 border border-gym-primary/20 flex items-center justify-center text-gym-primary">
+                    <div className="w-10 h-10 rounded-2xl bg-[#008000]/15 border border-[#008000]/30 flex items-center justify-center text-[#008000]">
                       <Dumbbell className="w-5 h-5" />
                     </div>
                     <div>
@@ -244,7 +244,7 @@ export const RoutinesListPage: React.FC = () => {
                         <h3 className="text-base font-bold text-zinc-100">{routine.name}</h3>
                         {routine.isActive && (
                           <Badge variant="default" className="gap-1">
-                            <Star className="w-3 h-3 fill-current text-gym-primary" />
+                            <Star className="w-3 h-3 fill-current text-[#008000]" />
                             Activa
                           </Badge>
                         )}
@@ -264,17 +264,17 @@ export const RoutinesListPage: React.FC = () => {
                       }}
                       className={`p-2 rounded-xl transition-all ${
                         routine.isActive
-                          ? 'text-gym-primary bg-gym-primary/10 border border-gym-primary/30 shadow-sm'
-                          : 'text-zinc-500 hover:text-gym-primary hover:bg-[#27272A]'
+                          ? 'text-[#008000] bg-[#008000]/15 border border-[#008000]/30 shadow-sm'
+                          : 'text-zinc-500 hover:text-[#008000] hover:bg-[#272833]'
                       }`}
                       title={routine.isActive ? 'Rutina activa actualmente' : 'Marcar como rutina activa'}
                     >
-                      <Star className={`w-4 h-4 ${routine.isActive ? 'fill-current text-gym-primary' : ''}`} />
+                      <Star className={`w-4 h-4 ${routine.isActive ? 'fill-current text-[#008000]' : ''}`} />
                     </button>
                     <Link
                       to={`/routines/${routine.id}/edit`}
                       onClick={(e) => e.stopPropagation()}
-                      className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-[#27272A] transition-colors"
+                      className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-[#272833] transition-colors"
                       title="Editar rutina"
                     >
                       <Edit3 className="w-4 h-4" />
@@ -298,11 +298,11 @@ export const RoutinesListPage: React.FC = () => {
 
                 {/* Días y Ejercicios Desplegados */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 pt-1 space-y-2.5 border-t border-[#27272A]">
+                  <div className="px-4 pb-4 pt-1 space-y-2.5 border-t border-[#272833]">
                     {routine.days.map((day) => (
                       <div
                         key={day.id}
-                        className="p-3.5 rounded-2xl bg-[#09090B] border border-[#27272A] flex items-center justify-between"
+                        className="p-3.5 rounded-2xl bg-[#121318] border border-[#272833] flex items-center justify-between"
                       >
                         <div>
                           <h4 className="text-sm font-bold text-zinc-100">{day.name}</h4>

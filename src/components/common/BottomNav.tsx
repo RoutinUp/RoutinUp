@@ -12,7 +12,7 @@ export const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-t border-[#27272A] pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#121318]/95 backdrop-blur-xl border-t border-[#272833] pb-safe">
       <div className="max-w-md mx-auto grid grid-cols-5 h-16">
         {navItems.map((item) => (
           <NavLink

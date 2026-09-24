@@ -22,12 +22,12 @@ export const Button: React.FC<ButtonProps> = ({
   const baseStyles = 'inline-flex items-center justify-center font-bold tracking-wide transition-all duration-200 active:scale-[0.98] select-none rounded-[16px] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 shadow-sm';
 
   const variants = {
-    primary: 'bg-gym-primary hover:bg-lime-400 text-zinc-950 font-bold shadow-sm',
-    accent: 'bg-gym-primary hover:bg-lime-400 text-zinc-950 font-bold shadow-sm',
-    secondary: 'bg-[#27272A] hover:bg-[#3F3F46] text-zinc-100 border border-[#27272A] font-semibold',
+    primary: 'bg-[#008000] hover:bg-[#006400] text-white font-bold shadow-sm',
+    accent: 'bg-[#008000] hover:bg-[#006400] text-white font-bold shadow-sm',
+    secondary: 'bg-[#272833] hover:bg-[#343542] text-zinc-100 border border-[#272833] font-semibold',
     danger: 'bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 font-semibold',
-    ghost: 'bg-transparent hover:bg-[#27272A] text-zinc-400 hover:text-zinc-100 font-medium',
-    outline: 'bg-transparent border border-[#27272A] hover:border-gym-primary/60 hover:bg-[#18181B] text-zinc-100 font-semibold',
+    ghost: 'bg-transparent hover:bg-[#272833] text-zinc-400 hover:text-zinc-100 font-medium',
+    outline: 'bg-transparent border border-[#272833] hover:border-[#008000]/60 hover:bg-[#181920] text-zinc-100 font-semibold',
   };
 
   const sizes = {

@@ -70,11 +70,11 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-[88vh] flex flex-col justify-center max-w-sm mx-auto px-4 py-6 select-none">
       {/* Logotipo y Título de Marca */}
       <div className="text-center mb-6">
-        <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto mb-3 shadow-glow-primary">
+        <div className="w-16 h-16 rounded-3xl bg-[#008000]/15 border border-[#008000]/30 flex items-center justify-center text-[#008000] mx-auto mb-3 shadow-glow-primary">
           <Dumbbell className="w-8 h-8" />
         </div>
         <h1 className="text-3xl font-black text-white tracking-tight">
-          {APP_CONFIG.name}
+          Routin<span style={{ color: '#008000' }} className="text-[#008000]">UP</span>
         </h1>
         <p className="text-xs text-gray-400 mt-1 font-medium">
           {APP_CONFIG.tagline}

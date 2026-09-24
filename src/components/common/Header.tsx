@@ -47,19 +47,19 @@ export const Header: React.FC<HeaderProps> = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#09090B]/95 border-b border-[#27272A] px-4 py-3">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-[#121318]/95 border-b border-[#272833] px-4 py-3">
       <div className="max-w-md mx-auto flex items-center justify-between relative">
         {/* Logo y Nombre Centralizado */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-xl bg-gym-primary/10 border border-gym-primary/20 flex items-center justify-center text-gym-primary group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-xl bg-[#008000]/10 border border-[#008000]/25 flex items-center justify-center text-[#008000] group-hover:scale-105 transition-transform">
             <Dumbbell className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-bold tracking-tight text-zinc-100 block leading-none">
-                {APP_CONFIG.name}
+                Routin<span style={{ color: '#008000' }} className="text-[#008000]">UP</span>
               </span>
-              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-gym-primary/10 text-gym-primary border border-gym-primary/20 tracking-wider leading-none">
+              <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[#008000]/10 text-[#008000] border border-[#008000]/25 tracking-wider leading-none">
                 BETA
               </span>
             </div>
@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = () => {
             onClick={() => setIsMenuOpen((prev) => !prev)}
             aria-expanded={isMenuOpen}
             aria-haspopup="true"
-            className="w-8 h-8 rounded-full bg-[#18181B] border border-[#27272A] hover:border-gym-primary/60 transition-all overflow-hidden flex items-center justify-center text-zinc-100 font-bold text-xs select-none shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-gym-primary/30"
+            className="w-8 h-8 rounded-full bg-[#181920] border border-[#272833] hover:border-[#008000]/60 transition-all overflow-hidden flex items-center justify-center text-zinc-100 font-bold text-xs select-none shadow-sm hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#008000]/30"
             title={displayName}
           >
             {avatarUrl ? (
@@ -86,14 +86,14 @@ export const Header: React.FC<HeaderProps> = () => {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-gym-primary font-bold text-[11px]">{initials}</span>
+              <span className="text-[#008000] font-bold text-[11px]">{initials}</span>
             )}
           </button>
 
           {/* Menú Desplegable (DropdownMenu) */}
           {isMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 py-1.5 rounded-2xl bg-[#18181B] border border-[#27272A] shadow-2xl z-50 animate-fade-in backdrop-blur-xl">
-              <div className="px-3.5 py-2 border-b border-[#27272A] mb-1">
+            <div className="absolute right-0 top-full mt-2 w-48 py-1.5 rounded-2xl bg-[#181920] border border-[#272833] shadow-2xl z-50 animate-fade-in backdrop-blur-xl">
+              <div className="px-3.5 py-2 border-b border-[#272833] mb-1">
                 <span className="text-[11px] font-medium text-zinc-300 block truncate">
                   {displayName}
                 </span>
@@ -109,15 +109,15 @@ export const Header: React.FC<HeaderProps> = () => {
                   setIsMenuOpen(false);
                   navigate('/settings');
                 }}
-                className="w-full px-3.5 py-2 text-left text-xs font-medium text-zinc-200 hover:text-white hover:bg-[#27272A] flex items-center gap-2.5 transition-colors"
+                className="w-full px-3.5 py-2 text-left text-xs font-medium text-zinc-200 hover:text-white hover:bg-[#272833] flex items-center gap-2.5 transition-colors"
               >
-                <div className="w-5 h-5 rounded-md bg-[#27272A] text-zinc-300 flex items-center justify-center">
+                <div className="w-5 h-5 rounded-md bg-[#272833] text-zinc-300 flex items-center justify-center">
                   <User className="w-3.5 h-3.5" />
                 </div>
                 <span>Mi cuenta</span>
               </button>
 
-              <div className="my-1 border-t border-[#27272A]" />
+              <div className="my-1 border-t border-[#272833]" />
 
               {/* Opción 2: Cerrar sesión */}
               <button

@@ -50,39 +50,39 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Dark Minimalist tokens
+        // Tokens de Tema y Bloques Coloridos
         gym: {
-          bg: '#09090B',         // Gris neutro casi negro
-          card: '#18181B',       // Zinc-900
-          cardLighter: '#27272A',// Zinc-800
-          border: '#27272A',     // Borde fino
-          primary: '#A3E635',    // Único color de acento (Verde Lima de alto contraste)
-          primaryHover: '#84CC16',
-          lime: '#A3E635',
-          lavender: '#A3E635',
-          electric: '#A3E635',
+          bg: '#121318',         // Oscuro profundo (#121318)
+          card: '#181920',       // Contenedor oscuro (#181920)
+          cardLighter: '#22232B',// Contenedor secundario
+          border: '#272833',     // Borde fino
+          primary: '#008000',    // Color Primario de Acento: Verde #008000
+          primaryHover: '#006400',
+          lime: '#D7F77B',       // Verde Lima pastel para tarjetas de bloque
+          lavender: '#DDD6FE',   // Lavanda pastel
+          electric: '#93C5FD',   // Azul suave pastel
           pureWhite: '#FAFAFA',
-          emerald: '#A3E635',
-          accent: '#A3E635',
+          emerald: '#008000',
+          accent: '#008000',
           danger: '#EF4444',
-          cyan: '#A3E635',
+          cyan: '#22D3EE',
         }
       },
       borderRadius: {
         lg: "16px",
         md: "12px",
         sm: "8px",
-        'xl': '14px',
-        '2xl': '16px', // 16px para tarjetas y contenedores
-        '3xl': '16px', // unificado a 16px
+        'xl': '16px',
+        '2xl': '20px', // Esquinas muy redondeadas (border-radius: 20px)
+        '3xl': '24px',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       boxShadow: {
-        'glow-primary': '0 0 15px -3px rgba(163, 230, 53, 0.25)',
-        'glow-lime': '0 0 15px -3px rgba(163, 230, 53, 0.25)',
-        'glow-accent': '0 0 15px -3px rgba(163, 230, 53, 0.25)',
+        'glow-primary': '0 0 15px -3px rgba(0, 128, 0, 0.35)',
+        'glow-lime': '0 0 15px -3px rgba(215, 247, 123, 0.35)',
+        'glow-accent': '0 0 15px -3px rgba(0, 128, 0, 0.35)',
       },
       keyframes: {
         "accordion-down": {

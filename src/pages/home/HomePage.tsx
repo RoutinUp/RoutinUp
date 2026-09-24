@@ -94,8 +94,8 @@ export const HomePage: React.FC = () => {
       {/* Saludo y Encabezado Dinámico con Supabase */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[11px] font-bold text-gym-primary uppercase tracking-widest block">
-            Bienvenido a {APP_CONFIG.name}
+          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest block">
+            Bienvenido a Routin<span style={{ color: '#008000' }} className="text-[#008000] font-black">UP</span>
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-zinc-100 tracking-tight mt-0.5">
             {getUserGreeting(user, profile)}
@@ -105,25 +105,27 @@ export const HomePage: React.FC = () => {
 
       {/* Si hay un entrenamiento activo minimizado */}
       {isActive && (
-        <Card className="border-gym-primary/40 bg-gym-primary/10 shadow-sm">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-bold text-gym-primary uppercase tracking-widest block">
-                Entrenamiento en Progreso
-              </span>
-              <span className="text-sm sm:text-base font-bold text-zinc-100">Continúa tu rutina activa</span>
-            </div>
-            <Button size="sm" variant="primary" onClick={handleResumeWorkout}>
-              CONTINUAR
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="rounded-[20px] bg-[#C4B5FD] text-[#0A0A0C] p-4 sm:p-5 flex items-center justify-between shadow-md border border-black/10">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-[#0A0A0C]/70 block">
+              Entrenamiento en Progreso
+            </span>
+            <span className="text-sm sm:text-base font-black text-[#0A0A0C]">Continúa tu rutina activa</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleResumeWorkout}
+            className="px-4 py-2 rounded-xl bg-black text-white font-black text-xs hover:bg-zinc-900 transition-all shadow-sm active:scale-95"
+          >
+            CONTINUAR
+          </button>
+        </div>
       )}
 
       {/* ESTADO INICIAL SI NO HAY RUTINA ACTIVA */}
       {!activeRoutine ? (
-        <Card className="p-6 sm:p-8 text-center space-y-5">
-          <div className="w-14 h-14 rounded-2xl bg-gym-primary/10 border border-gym-primary/20 flex items-center justify-center text-gym-primary mx-auto">
+        <Card className="p-6 sm:p-8 text-center space-y-5 rounded-[20px] bg-[#181920] border-[#272833]">
+          <div className="w-14 h-14 rounded-2xl bg-[#008000]/10 border border-[#008000]/25 flex items-center justify-center text-[#008000] mx-auto">
             <Dumbbell className="w-7 h-7" />
           </div>
           <div className="space-y-1.5 max-w-xs mx-auto">
@@ -158,77 +160,78 @@ export const HomePage: React.FC = () => {
         </Card>
       ) : (
         <>
-          {/* TARJETA GRANDE: TU PRÓXIMA RUTINA (shadcn Card) */}
+          {/* TARJETA DE BLOQUE DE COLOR COMPLETO: TU PRÓXIMA RUTINA (Full Color Block Card) */}
           {nextDay && (
-            <Card className="relative overflow-hidden border-[#27272A] bg-[#18181B] shadow-sm">
-              <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-                <Dumbbell className="w-32 h-32 text-gym-primary" />
+            <div className="relative overflow-hidden rounded-[20px] bg-[#D7F77B] p-5 sm:p-6 text-[#0A0A0C] shadow-lg border border-black/10">
+              <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+                <Dumbbell className="w-36 h-36 text-black" />
               </div>
 
-              <CardContent className="p-5 sm:p-6 space-y-4 relative z-10">
+              <div className="relative z-10 space-y-4">
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <Badge variant="default" className="gap-1">
-                      <Flame className="w-3 h-3" />
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black text-[#D7F77B] shadow-sm select-none">
+                      <Flame className="w-3 h-3 fill-current" />
                       TU PRÓXIMA RUTINA
-                    </Badge>
-                    <Badge variant="secondary" className="gap-1">
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-black/10 text-[#0A0A0C] border border-black/15 select-none">
                       <Star className="w-2.5 h-2.5 fill-current" />
                       {activeRoutine.name}
-                    </Badge>
+                    </span>
                   </div>
-                  <h2 className="text-2xl font-black text-zinc-100 mt-1 leading-tight">
+                  <h2 className="text-2xl sm:text-3xl font-black text-[#0A0A0C] tracking-tight leading-tight mt-1">
                     {nextDay.name}
                   </h2>
-                  <p className="text-xs text-zinc-400 font-medium mt-1">
+                  <p className="text-xs text-[#0A0A0C]/80 font-bold mt-1">
                     {nextDay.exercises.length} ejercicios · ~{Math.round(nextDay.exercises.length * 8.5)} min estimados
                   </p>
                 </div>
 
-                {/* Lista previa compacta de ejercicios */}
+                {/* Lista previa compacta de ejercicios en bloque */}
                 <div className="space-y-1.5 py-1">
                   {nextDay.exercises.slice(0, 3).map((ex, idx) => (
-                    <div key={idx} className="flex items-center justify-between gap-2 text-xs text-zinc-300">
-                      <span className="font-medium whitespace-normal break-words [word-break:break-word] flex-1 min-w-0">
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between gap-2 text-xs font-semibold text-[#0A0A0C]/90 bg-black/5 px-3 py-1.5 rounded-xl border border-black/5"
+                    >
+                      <span className="whitespace-normal break-words [word-break:break-word] flex-1 min-w-0 font-bold">
                         {idx + 1}. {ex.exercise?.name || 'Ejercicio'}
                       </span>
-                      <span className="text-zinc-500 text-[11px] flex-shrink-0">
+                      <span className="text-[#0A0A0C]/70 text-[11px] font-bold flex-shrink-0">
                         {ex.targetSets} series · {ex.targetRepsMin}–{ex.targetRepsMax} reps
                       </span>
                     </div>
                   ))}
                   {nextDay.exercises.length > 3 && (
-                    <span className="text-[11px] text-zinc-500 block italic">
+                    <span className="text-[11px] text-[#0A0A0C]/70 block font-bold italic px-1">
                       + {nextDay.exercises.length - 3} ejercicios más
                     </span>
                   )}
                 </div>
 
-                {/* BOTÓN GIGANTE "INICIAR RUTINA" con bordes redondeados (16px) e impacto visual */}
-                <Button
-                  size="xl"
-                  fullWidth
-                  variant="primary"
+                {/* BOTÓN INTERNO EN CONTRASTE OSCURO */}
+                <button
+                  type="button"
                   onClick={() => handleStartWorkout(nextDay!, activeRoutine.name)}
-                  className="rounded-2xl font-black tracking-wider text-zinc-950 bg-gym-primary hover:bg-lime-400 shadow-md hover:shadow-gym-primary/20 py-4 transition-transform active:scale-[0.99]"
-                  icon={<Play className="w-5 h-5 fill-current stroke-none" />}
+                  className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-black hover:bg-zinc-900 active:scale-[0.99] text-white font-black text-sm tracking-wider uppercase py-4 shadow-md transition-all select-none"
                 >
+                  <Play className="w-4 h-4 fill-current stroke-none" />
                   INICIAR RUTINA
-                </Button>
-              </CardContent>
-            </Card>
+                </button>
+              </div>
+            </div>
           )}
 
           {/* SECCIÓN: DÍAS DE LA RUTINA ACTIVA */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black text-zinc-200 tracking-wider uppercase flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-gym-primary" />
+                <Calendar className="w-4 h-4 text-[#008000]" />
                 DÍAS DE {activeRoutine.name.toUpperCase()}
               </h3>
               <Link
                 to="/routines"
-                className="text-xs font-bold text-gym-primary hover:text-lime-400 transition-colors flex items-center gap-1"
+                className="text-xs font-bold text-[#008000] hover:text-green-500 transition-colors flex items-center gap-1"
               >
                 Cambiar rutina
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -242,17 +245,17 @@ export const HomePage: React.FC = () => {
                 return (
                   <div
                     key={d.id}
-                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                    className={`flex items-center justify-between p-4 rounded-[20px] border transition-all ${
                       isNext
-                        ? 'bg-[#18181B] border-gym-primary/40 shadow-sm'
-                        : 'bg-[#18181B] border-[#27272A] hover:border-zinc-700'
+                        ? 'bg-[#181920] border-[#008000]/60 shadow-sm'
+                        : 'bg-[#181920] border-[#272833] hover:border-zinc-700'
                     }`}
                   >
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="text-sm font-bold text-zinc-100">{d.name}</h4>
                         {isNext && (
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gym-primary/10 text-gym-primary border border-gym-primary/20">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#008000]/15 text-[#008000] border border-[#008000]/30">
                             Siguiente
                           </span>
                         )}
@@ -264,7 +267,11 @@ export const HomePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleStartWorkout(d, activeRoutine.name)}
-                      className="px-3.5 py-1.5 rounded-full bg-gym-primary/10 text-gym-primary border border-gym-primary/20 text-xs font-bold hover:bg-gym-primary hover:text-zinc-950 transition-all flex items-center gap-1 shadow-sm"
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 shadow-sm ${
+                        isNext
+                          ? 'bg-[#008000] hover:bg-[#006400] text-white'
+                          : 'bg-[#272833] hover:bg-[#343542] text-zinc-200 border border-[#272833]'
+                      }`}
                     >
                       <Play className="w-3 h-3 fill-current stroke-none" />
                       Iniciar
@@ -294,19 +301,19 @@ export const HomePage: React.FC = () => {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-black text-zinc-200 tracking-wider uppercase flex items-center gap-1.5">
-            <History className="w-4 h-4 text-gym-primary" />
+            <History className="w-4 h-4 text-[#008000]" />
             ENTRENAMIENTOS RECIENTES
           </h3>
           <Link
             to="/history"
-            className="text-xs font-bold text-gym-primary hover:text-lime-400 transition-colors"
+            className="text-xs font-bold text-[#008000] hover:text-green-500 transition-colors"
           >
             Historial completo
           </Link>
         </div>
 
         {recentSessions.length === 0 ? (
-          <Card className="text-center py-6 px-4">
+          <Card className="text-center py-6 px-4 rounded-[20px] bg-[#181920] border-[#272833]">
             <p className="text-sm text-zinc-400">Aún no has registrado ningún entrenamiento.</p>
             <p className="text-xs text-zinc-500 mt-1">¡Comienza tu primera sesión para construir tu historial!</p>
           </Card>
@@ -315,10 +322,10 @@ export const HomePage: React.FC = () => {
             {recentSessions.slice(0, 3).map((s) => (
               <div
                 key={s.id}
-                className="p-3.5 rounded-2xl bg-[#18181B] border border-[#27272A] flex items-center justify-between hover:border-zinc-700 transition-colors"
+                className="p-3.5 rounded-[20px] bg-[#181920] border border-[#272833] flex items-center justify-between hover:border-zinc-700 transition-colors"
               >
                 <div>
-                  <span className="text-[10px] font-bold text-gym-primary uppercase tracking-wider block">
+                  <span className="text-[10px] font-bold text-[#008000] uppercase tracking-wider block">
                     {formatDateSpanish(s.startedAt)}
                   </span>
                   <h4 className="text-sm font-bold text-zinc-100">{s.routineName} · {s.dayName}</h4>
@@ -328,7 +335,7 @@ export const HomePage: React.FC = () => {
                 </div>
                 <Link
                   to={`/history/${s.id}`}
-                  className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 bg-[#27272A] hover:bg-zinc-700 transition-colors"
+                  className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 bg-[#272833] hover:bg-zinc-700 transition-colors"
                 >
                   <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -363,7 +370,7 @@ export const HomePage: React.FC = () => {
             {PRESET_OPTIONS.map((preset) => (
               <div
                 key={preset.index}
-                className="p-4 rounded-2xl bg-[#18181B] border border-[#27272A] space-y-2.5 hover:border-zinc-700 transition-all"
+                className="p-4 rounded-[20px] bg-[#181920] border border-[#272833] space-y-2.5 hover:border-zinc-700 transition-all"
               >
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-bold text-zinc-100">{preset.title}</h4>
@@ -377,7 +384,7 @@ export const HomePage: React.FC = () => {
                 <div className="space-y-1 py-1">
                   {preset.days.map((dayName, dIdx) => (
                     <div key={dIdx} className="text-[11px] text-zinc-400 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-gym-primary" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#008000]" />
                       <span>{dayName}</span>
                     </div>
                   ))}
