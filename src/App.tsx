@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import { Header } from './components/common/Header';
@@ -20,6 +20,7 @@ import { ExerciseLibraryPage } from './pages/exercises/ExerciseLibraryPage';
 import { ActiveWorkoutPage } from './pages/workout/ActiveWorkoutPage';
 import { HistoryListPage } from './pages/history/HistoryListPage';
 import { ProgressPage } from './pages/progress/ProgressPage';
+import { NutritionPage } from './pages/nutrition/NutritionPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 
 // Layout que oculta barras en el modo de entrenamiento activo o en páginas de autenticación
@@ -112,9 +113,13 @@ export function App() {
           />
           <Route
             path="/exercises"
+            element={<Navigate to="/routines?tab=exercises" replace />}
+          />
+          <Route
+            path="/nutrition"
             element={
               <ProtectedRoute>
-                <ExerciseLibraryPage />
+                <NutritionPage />
               </ProtectedRoute>
             }
           />

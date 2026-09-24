@@ -18,7 +18,11 @@ const MUSCLE_FILTERS: { id: MuscleGroup | 'todos'; label: string }[] = [
   { id: 'core', label: 'Core' },
 ];
 
-export const ExerciseLibraryPage: React.FC = () => {
+export interface ExerciseLibraryPageProps {
+  embedded?: boolean;
+}
+
+export const ExerciseLibraryPage: React.FC<ExerciseLibraryPageProps> = ({ embedded = false }) => {
   const { user } = useAuthStore();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [selectedMuscle, setSelectedMuscle] = useState<MuscleGroup | 'todos'>('todos');
@@ -89,26 +93,42 @@ export const ExerciseLibraryPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 pb-20">
+    <div className={`space-y-4 ${embedded ? 'pb-8' : 'pb-20'}`}>
       {/* Header y Botón Crear Ejercicio */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
-            Biblioteca de Ejercicios
-          </h1>
-          <p className="text-xs text-gray-400">
-            {exercises.length} ejercicios disponibles
-          </p>
+      {!embedded ? (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-black text-white tracking-tight">
+              Biblioteca de Ejercicios
+            </h1>
+            <p className="text-xs text-gray-400">
+              {exercises.length} ejercicios disponibles
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => setIsCreateModalOpen(true)}
+            icon={<Plus className="w-4 h-4 stroke-[3]" />}
+          >
+            Crear
+          </Button>
         </div>
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={() => setIsCreateModalOpen(true)}
-          icon={<Plus className="w-4 h-4 stroke-[3]" />}
-        >
-          Crear
-        </Button>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-xs font-bold text-gray-400">
+            {exercises.length} ejercicios disponibles en catálogo
+          </p>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => setIsCreateModalOpen(true)}
+            icon={<Plus className="w-4 h-4 stroke-[3]" />}
+          >
+            Nuevo Ejercicio
+          </Button>
+        </div>
+      )}
 
       {/* Buscador */}
       <div className="relative">
@@ -118,7 +138,7 @@ export const ExerciseLibraryPage: React.FC = () => {
           placeholder="Buscar ejercicio por nombre..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 bg-gym-card border border-gym-border rounded-2xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+          className="w-full pl-10 pr-4 py-3 bg-gym-card border border-gym-border rounded-2xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gym-lime transition-colors"
         />
       </div>
 
@@ -132,7 +152,7 @@ export const ExerciseLibraryPage: React.FC = () => {
             className={`
               px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all select-none
               ${selectedMuscle === m.id
-                ? 'bg-emerald-500 text-slate-950 shadow-glow-primary'
+                ? 'bg-gym-lime text-slate-950 font-black shadow-glow-lime'
                 : 'bg-gym-card text-gray-300 border border-gym-border hover:border-gray-500'
               }
             `}
@@ -144,7 +164,7 @@ export const ExerciseLibraryPage: React.FC = () => {
 
       {/* Lista de Ejercicios */}
       {filteredExercises.length === 0 ? (
-        <div className="text-center py-10 rounded-2xl bg-gym-card border border-gym-border/60">
+        <div className="text-center py-10 rounded-3xl bg-gym-card border border-gym-border/60">
           <Dumbbell className="w-10 h-10 text-gray-600 mx-auto mb-2" />
           <p className="text-sm font-bold text-gray-400">No se encontraron ejercicios</p>
           <p className="text-xs text-gray-500 mt-1">Prueba con otro filtro o crea uno nuevo</p>
@@ -155,10 +175,10 @@ export const ExerciseLibraryPage: React.FC = () => {
             <div
               key={ex.id}
               onClick={() => setSelectedExercise(ex)}
-              className="p-3.5 rounded-2xl bg-gym-card border border-gym-border/70 hover:border-emerald-500/50 transition-all cursor-pointer flex items-center gap-3.5 group"
+              className="p-3.5 rounded-3xl bg-gym-card border border-gym-border/70 hover:border-gym-lime/50 transition-all cursor-pointer flex items-center gap-3.5 group shadow-sm"
             >
               {/* Miniatura Ilustración Anatómica */}
-              <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-slate-900 border border-gym-border/80">
+              <div className="w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-900 border border-gym-border/80">
                 <ExerciseImage
                   imageUrl={ex.imageUrl}
                   name={ex.name}
@@ -172,16 +192,16 @@ export const ExerciseLibraryPage: React.FC = () => {
               {/* Datos */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-gym-lime px-2 py-0.5 rounded-full bg-gym-lime/10 border border-gym-lime/20">
                     {ex.mainMuscleGroup}
                   </span>
                   {ex.isCustom && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold">
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
                       Personalizado
                     </span>
                   )}
                 </div>
-                <h4 className="text-[clamp(0.95rem,3.5vw,1.1rem)] font-bold text-white whitespace-normal break-words [word-break:break-word] group-hover:text-emerald-400 transition-colors leading-snug">
+                <h4 className="text-[clamp(0.95rem,3.5vw,1.1rem)] font-bold text-white whitespace-normal break-words [word-break:break-word] group-hover:text-gym-lime transition-colors leading-snug mt-1">
                   {ex.name}
                 </h4>
                 <p className="text-xs text-gray-400 truncate mt-0.5">
@@ -189,7 +209,7 @@ export const ExerciseLibraryPage: React.FC = () => {
                 </p>
               </div>
 
-              <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-gym-lime transition-colors flex-shrink-0" />
             </div>
           ))}
         </div>

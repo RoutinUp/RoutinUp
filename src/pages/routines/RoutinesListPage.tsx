@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { routineService } from '../../services/routine.service';
 import { workoutService } from '../../services/workout.service';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -7,8 +7,9 @@ import { useActiveWorkoutStore } from '../../store/useActiveWorkoutStore';
 import { WorkoutRoutine, WorkoutDay } from '../../types/routine';
 import { Button } from '../../components/common/Button';
 import { Modal } from '../../components/common/Modal';
-import { Plus, Play, Calendar, Trash2, Edit3, ChevronDown, ChevronUp, Dumbbell, Star } from 'lucide-react';
+import { Plus, Play, Calendar, Trash2, Edit3, ChevronDown, ChevronUp, Dumbbell, Star, BookOpen } from 'lucide-react';
 import { CreateRoutineOptionsModal } from '../../components/routines/CreateRoutineOptionsModal';
+import { ExerciseLibraryPage } from '../exercises/ExerciseLibraryPage';
 
 export const PRESET_OPTIONS = [
   {
@@ -36,6 +37,8 @@ export const PRESET_OPTIONS = [
 
 export const RoutinesListPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'exercises' ? 'exercises' : 'routines';
   const { user } = useAuthStore();
   const { startWorkout } = useActiveWorkoutStore();
 
@@ -124,22 +127,60 @@ export const RoutinesListPage: React.FC = () => {
 
   return (
     <div className="space-y-4 pb-20">
+      {/* Cabecera Principal */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Mis Rutinas</h1>
-          <p className="text-xs text-gray-400">Planifica tus sesiones de entrenamiento</p>
+          <span className="text-[10px] font-bold text-gym-lime uppercase tracking-widest block">
+            Entrenamiento
+          </span>
+          <h1 className="text-2xl font-black text-white tracking-tight">
+            Rutinas y Ejercicios
+          </h1>
         </div>
-        <Button
-          size="sm"
-          variant="primary"
-          onClick={() => setIsCreateModalOpen(true)}
-          icon={<Plus className="w-4 h-4 stroke-[3]" />}
-        >
-          Crear
-        </Button>
+        {activeTab === 'routines' && (
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => setIsCreateModalOpen(true)}
+            icon={<Plus className="w-4 h-4 stroke-[3]" />}
+          >
+            Crear
+          </Button>
+        )}
       </div>
 
-      {isLoading ? (
+      {/* Selector de Pestañas Superiores (Tabs) */}
+      <div className="grid grid-cols-2 p-1.5 rounded-full bg-slate-900 border border-gym-border/70 text-xs font-bold shadow-inner">
+        <button
+          type="button"
+          onClick={() => setSearchParams({ tab: 'routines' })}
+          className={`py-2 px-3 rounded-full text-center transition-all ${
+            activeTab === 'routines'
+              ? 'bg-gym-lime text-slate-950 font-black shadow-glow-lime'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Mis Rutinas
+        </button>
+        <button
+          type="button"
+          onClick={() => setSearchParams({ tab: 'exercises' })}
+          className={`py-2 px-3 rounded-full text-center transition-all ${
+            activeTab === 'exercises'
+              ? 'bg-gym-lime text-slate-950 font-black shadow-glow-lime'
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Biblioteca de Ejercicios
+        </button>
+      </div>
+
+      {/* Contenido Condicional según Pestaña */}
+      {activeTab === 'exercises' ? (
+        <ExerciseLibraryPage embedded />
+      ) : (
+        <>
+          {isLoading ? (
         <div className="text-center py-12">
           <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
           <span className="text-xs text-gray-400">Cargando tus rutinas...</span>
@@ -284,6 +325,8 @@ export const RoutinesListPage: React.FC = () => {
             );
           })}
         </div>
+      )}
+        </>
       )}
 
       {/* Modal Confirmar Eliminar */}

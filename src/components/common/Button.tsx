@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline' | 'accent';
@@ -19,15 +19,15 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-bold tracking-wide transition-all duration-200 active:scale-[0.98] select-none rounded-2xl disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 shadow-sm';
+  const baseStyles = 'inline-flex items-center justify-center font-bold tracking-wide transition-all duration-200 active:scale-[0.98] select-none rounded-[20px] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 shadow-sm';
 
   const variants = {
-    primary: 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black shadow-glow-primary hover:shadow-emerald-500/40',
-    accent: 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-glow-accent',
+    primary: 'bg-gym-lime hover:bg-lime-400 text-slate-950 font-black shadow-glow-lime hover:shadow-lime-500/40',
+    accent: 'bg-gym-electric hover:bg-sky-400 text-slate-950 font-black shadow-glow-accent',
     secondary: 'bg-gym-cardLighter hover:bg-slate-700 text-white border border-gym-border/80',
     danger: 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30',
     ghost: 'bg-transparent hover:bg-slate-800 text-gray-300',
-    outline: 'bg-transparent border border-gym-border hover:border-emerald-500 text-white',
+    outline: 'bg-transparent border border-gym-border hover:border-gym-lime text-white',
   };
 
   const sizes = {

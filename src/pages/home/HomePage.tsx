@@ -93,7 +93,7 @@ export const HomePage: React.FC = () => {
       {/* Saludo y Encabezado Personalizado */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
+          <span className="text-xs font-bold text-gym-lime uppercase tracking-wider block">
             Bienvenido a {APP_CONFIG.name}
           </span>
           <h1 className="text-2xl font-black text-white tracking-tight">
@@ -104,9 +104,9 @@ export const HomePage: React.FC = () => {
 
       {/* Si hay un entrenamiento activo minimizado */}
       {isActive && (
-        <div className="p-4 rounded-3xl bg-emerald-500/20 border border-emerald-500/40 shadow-glow-primary flex items-center justify-between">
+        <div className="p-4 rounded-3xl bg-gym-lime/15 border border-gym-lime/30 shadow-glow-lime flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-widest block">
+            <span className="text-[11px] font-bold text-gym-lime uppercase tracking-widest block">
               Entrenamiento en Progreso
             </span>
             <span className="text-base font-black text-white">Continúa tu rutina activa</span>
@@ -120,7 +120,7 @@ export const HomePage: React.FC = () => {
       {/* ESTADO INICIAL SI NO HAY RUTINA ACTIVA */}
       {!activeRoutine ? (
         <div className="rounded-3xl bg-gym-card border border-gym-border/90 p-6 sm:p-8 text-center space-y-5 shadow-xl">
-          <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto shadow-glow-primary">
+          <div className="w-16 h-16 rounded-3xl bg-gym-lime/15 border border-gym-lime/30 flex items-center justify-center text-gym-lime mx-auto shadow-glow-lime">
             <Dumbbell className="w-8 h-8" />
           </div>
           <div className="space-y-1.5 max-w-xs mx-auto">
@@ -157,20 +157,20 @@ export const HomePage: React.FC = () => {
         <>
           {/* TARJETA GRANDE: TU PRÓXIMA RUTINA */}
           {nextDay && (
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1E293B] via-[#151D2A] to-[#0D131F] border border-gym-border/80 shadow-2xl p-5">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#242738] via-[#1A1C28] to-[#13141C] border border-gym-border/80 shadow-2xl p-5">
               <div className="absolute top-0 right-0 p-6 opacity-10">
-                <Dumbbell className="w-32 h-32 text-emerald-400" />
+                <Dumbbell className="w-32 h-32 text-gym-lime" />
               </div>
 
               <div className="relative z-10 space-y-4">
                 <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-gym-lime/15 text-gym-lime border border-gym-lime/30 shadow-glow-lime">
                       <Flame className="w-3 h-3" />
                       TU PRÓXIMA RUTINA
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gym-lavender/15 text-gym-lavender border border-gym-lavender/30">
+                      <Star className="w-2.5 h-2.5 fill-current" />
                       {activeRoutine.name}
                     </span>
                   </div>
@@ -219,12 +219,12 @@ export const HomePage: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-1.5">
-                <Calendar className="w-5 h-5 text-emerald-400" />
+                <Calendar className="w-5 h-5 text-gym-lime" />
                 DÍAS DE {activeRoutine.name.toUpperCase()}
               </h3>
               <Link
                 to="/routines"
-                className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                className="text-xs font-bold text-gym-lime hover:text-lime-300 transition-colors flex items-center gap-1"
               >
                 Cambiar rutina
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -238,9 +238,9 @@ export const HomePage: React.FC = () => {
                 return (
                   <div
                     key={d.id}
-                    className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
+                    className={`flex items-center justify-between p-4 rounded-3xl border transition-all ${
                       isNext
-                        ? 'bg-gym-card border-emerald-500/40 shadow-sm'
+                        ? 'bg-gym-card border-gym-lime/40 shadow-sm'
                         : 'bg-gym-card/60 border-gym-border/60 hover:border-gray-500'
                     }`}
                   >
@@ -248,7 +248,7 @@ export const HomePage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <h4 className="text-sm font-bold text-white">{d.name}</h4>
                         {isNext && (
-                          <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gym-lime/15 text-gym-lime border border-gym-lime/30">
                             Siguiente
                           </span>
                         )}
@@ -260,9 +260,9 @@ export const HomePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleStartWorkout(d, activeRoutine.name)}
-                      className="px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold hover:bg-emerald-500 hover:text-slate-950 transition-all flex items-center gap-1"
+                      className="px-3.5 py-1.5 rounded-full bg-gym-lime/15 text-gym-lime border border-gym-lime/30 text-xs font-bold hover:bg-gym-lime hover:text-slate-950 transition-all flex items-center gap-1 shadow-sm"
                     >
-                      <Play className="w-3 h-3 fill-current" />
+                      <Play className="w-3 h-3 fill-current stroke-none" />
                       Iniciar
                     </button>
                   </div>
