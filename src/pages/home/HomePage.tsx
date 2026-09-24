@@ -95,119 +95,139 @@ export const HomePage: React.FC = () => {
   const monday = new Date(now);
   monday.setDate(now.getDate() - currentDayOfWeek);
 
+  const isSameDay = (d1: Date, d2: Date) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+
   const weekDays = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'].map((label, idx) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + idx);
+    const hasWorkout = recentSessions.some((s) => isSameDay(new Date(s.startedAt), d));
     return {
       label,
       dateNumber: d.getDate(),
       isToday: d.toDateString() === now.toDateString(),
+      hasWorkout,
     };
   });
+
+  // Cálculo de racha (streak)
+  const sundayEnd = new Date(monday);
+  sundayEnd.setDate(monday.getDate() + 6);
+  sundayEnd.setHours(23, 59, 59, 999);
+  const mondayStart = new Date(monday);
+  mondayStart.setHours(0, 0, 0, 0);
+
+  const workoutsThisWeek = recentSessions.filter((s) => {
+    const sDate = new Date(s.startedAt);
+    return sDate >= mondayStart && sDate <= sundayEnd;
+  }).length;
+
+  let consecutiveWeeks = 0;
+  let weekOffset = workoutsThisWeek > 0 ? 0 : 1;
+  while (true) {
+    const checkMonday = new Date(monday);
+    checkMonday.setDate(monday.getDate() - weekOffset * 7);
+    checkMonday.setHours(0, 0, 0, 0);
+    const checkSunday = new Date(checkMonday);
+    checkSunday.setDate(checkMonday.getDate() + 6);
+    checkSunday.setHours(23, 59, 59, 999);
+
+    const hasSessionInWeek = recentSessions.some((s) => {
+      const sDate = new Date(s.startedAt);
+      return sDate >= checkMonday && sDate <= checkSunday;
+    });
+
+    if (hasSessionInWeek) {
+      consecutiveWeeks++;
+      weekOffset++;
+    } else {
+      break;
+    }
+  }
+
+  let streakBadgeText = '';
+  if (consecutiveWeeks > 1) {
+    streakBadgeText = `${consecutiveWeeks} sem seguidas`;
+  } else if (workoutsThisWeek > 0) {
+    streakBadgeText = `x${workoutsThisWeek}/sem`;
+  } else if (consecutiveWeeks === 1) {
+    streakBadgeText = `1 sem`;
+  } else {
+    streakBadgeText = '0/sem';
+  }
 
   const userName = getUserDisplayName(user, profile) || 'Atleta';
   const userInitials = getUserInitials(user, profile);
   const avatarUrl = getUserAvatarUrl(user, profile);
 
-  const dayBlockColors = [
-    {
-      bg: 'bg-[#D8F84A]',
-      text: 'text-[#0A0A0C]',
-      badgeBg: 'bg-black/10 text-[#0A0A0C] border-black/15',
-      badgeNext: 'bg-black text-[#D8F84A]',
-      btnBg: 'bg-black text-white hover:bg-zinc-900',
-    },
-    {
-      bg: 'bg-[#D4B8FE]',
-      text: 'text-[#0A0A0C]',
-      badgeBg: 'bg-black/10 text-[#0A0A0C] border-black/15',
-      badgeNext: 'bg-black text-[#D4B8FE]',
-      btnBg: 'bg-black text-white hover:bg-zinc-900',
-    },
-    {
-      bg: 'bg-[#FF9B80]',
-      text: 'text-[#0A0A0C]',
-      badgeBg: 'bg-black/10 text-[#0A0A0C] border-black/15',
-      badgeNext: 'bg-black text-[#FF9B80]',
-      btnBg: 'bg-black text-white hover:bg-zinc-900',
-    },
-    {
-      bg: 'bg-[#93C5FD]',
-      text: 'text-[#0A0A0C]',
-      badgeBg: 'bg-black/10 text-[#0A0A0C] border-black/15',
-      badgeNext: 'bg-black text-[#93C5FD]',
-      btnBg: 'bg-black text-white hover:bg-zinc-900',
-    },
-  ];
-
   return (
     <div className="space-y-5 pb-20 select-none">
-      {/* Saludo y Encabezado Dinámico con Supabase (Estilo Referencia Screen 1) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              {getUserGreeting(user, profile)}
-            </h1>
-            <p className="text-xs text-zinc-400 font-medium mt-0.5 flex items-center gap-1.5">
-              <span>💚</span> ¡Que tengas un día de entrenamiento productivo!
-            </p>
-          </div>
-          <Link
-            to="/settings"
-            className="w-10 h-10 rounded-full bg-[#181920] border border-[#272833] flex items-center justify-center text-zinc-300 hover:text-white hover:border-[#008000] transition-colors"
-            title="Mi perfil"
-          >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={userName} className="w-full h-full rounded-full object-cover" />
-            ) : (
-              <span className="text-xs font-black text-[#008000]">{userInitials}</span>
-            )}
-          </Link>
+      {/* Saludo y Encabezado Limpio */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            {getUserGreeting(user, profile)}
+          </h1>
         </div>
-
-        {/* Píldoras de estado del usuario (como en la referencia) */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#D4B8FE]/20 text-[#D4B8FE] border border-[#D4B8FE]/30 select-none">
-            {activeRoutine ? activeRoutine.name : 'Sin rutina activa'}
-          </span>
-          <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#FF8A65]/20 text-[#FF8A65] border border-[#FF8A65]/30 select-none">
-            {recentSessions.length} {recentSessions.length === 1 ? 'entrenamiento completado' : 'entrenamientos completados'}
-          </span>
-        </div>
+        <Link
+          to="/settings"
+          className="w-10 h-10 rounded-full bg-[#18181B] border border-[#27272A] flex items-center justify-center text-zinc-300 hover:text-white hover:border-[#008000] transition-colors"
+          title="Mi perfil"
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={userName} className="w-full h-full rounded-full object-cover" />
+          ) : (
+            <span className="text-xs font-black text-[#008000]">{userInitials}</span>
+          )}
+        </Link>
       </div>
 
-      {/* Franja de Calendario Semanal (Estilo Referencia Screen 1) */}
-      <div className="p-3.5 rounded-[20px] bg-[#181920] border border-[#272833] space-y-2.5">
+      {/* Franja de Calendario Semanal */}
+      <div className="p-3.5 rounded-[20px] bg-[#18181B] border border-[#27272A] space-y-2.5">
         <div className="flex items-center justify-between text-xs font-bold text-zinc-400 px-1">
           <span className="capitalize text-zinc-300">{currentMonthYear}</span>
-          <span className="text-[10px] text-zinc-500 font-semibold">Semana en curso</span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-[#27272A] text-amber-400 border border-amber-500/20 shadow-sm">
+            <span>🔥</span>
+            <span>{streakBadgeText}</span>
+          </span>
         </div>
         <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center">
           {weekDays.map((d, i) => (
             <div key={i} className="flex flex-col items-center gap-1.5">
               <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">{d.label}</span>
               <div
-                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs font-black transition-all ${
                   d.isToday
                     ? 'bg-white text-zinc-950 shadow-lg scale-105 ring-2 ring-white/30'
+                    : d.hasWorkout
+                    ? 'bg-[#18181B] text-white border border-[#008000]/60 ring-1 ring-[#008000]/40'
                     : 'bg-[#121318] text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 {d.dateNumber}
+                {d.hasWorkout && (
+                  <span
+                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center bg-[#008000] text-white shadow-md"
+                    title="Entrenamiento registrado"
+                  >
+                    <Dumbbell className="w-2.5 h-2.5" />
+                  </span>
+                )}
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Si hay un entrenamiento activo minimizado (Estilo Royal Blue de la Referencia) */}
+      {/* Si hay un entrenamiento activo minimizado */}
       {isActive && (
-        <div className="rounded-[20px] bg-[#5055E8] text-white p-4 sm:p-5 flex items-center justify-between shadow-xl border border-white/10">
+        <div className="rounded-[20px] bg-[#18181B] text-white p-4 sm:p-5 flex items-center justify-between shadow-xl border border-[#008000]/50">
           <div>
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/80">
+              <span className="w-2 h-2 rounded-full bg-[#008000] animate-ping" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#008000]">
                 Entrenamiento en Progreso
               </span>
             </div>
@@ -216,7 +236,7 @@ export const HomePage: React.FC = () => {
           <button
             type="button"
             onClick={handleResumeWorkout}
-            className="px-4 py-2 rounded-xl bg-black text-white font-black text-xs hover:bg-zinc-900 transition-all shadow-md active:scale-95"
+            className="px-4 py-2 rounded-xl bg-[#008000] hover:bg-[#006400] text-white font-black text-xs transition-all shadow-md active:scale-95"
           >
             CONTINUAR →
           </button>
@@ -225,7 +245,7 @@ export const HomePage: React.FC = () => {
 
       {/* ESTADO INICIAL SI NO HAY RUTINA ACTIVA */}
       {!activeRoutine ? (
-        <Card className="p-6 sm:p-8 text-center space-y-5 rounded-[20px] bg-[#181920] border-[#272833]">
+        <Card className="p-6 sm:p-8 text-center space-y-5 rounded-[20px] bg-[#18181B] border-[#27272A]">
           <div className="w-14 h-14 rounded-2xl bg-[#008000]/10 border border-[#008000]/25 flex items-center justify-center text-[#008000] mx-auto">
             <Dumbbell className="w-7 h-7" />
           </div>
@@ -261,32 +281,32 @@ export const HomePage: React.FC = () => {
         </Card>
       ) : (
         <>
-          {/* TARJETA DE BLOQUE DE COLOR COMPLETO: TU PRÓXIMA RUTINA (Full Color Block Card - Estilo Referencia) */}
+          {/* TARJETA: TU PRÓXIMA RUTINA */}
           {nextDay && (
-            <div className="relative overflow-hidden rounded-[20px] bg-[#D4B8FE] p-5 sm:p-6 text-[#0A0A0C] shadow-xl border border-black/10">
-              <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-                <Dumbbell className="w-36 h-36 text-black" />
+            <div className="relative overflow-hidden rounded-[20px] bg-[#18181B] p-5 sm:p-6 text-white shadow-xl border-2 border-[#008000]/60">
+              <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
+                <Dumbbell className="w-36 h-36 text-white" />
               </div>
 
               <div className="relative z-10 space-y-4">
                 <div>
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-black text-[#D4B8FE] shadow-sm select-none">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#008000] text-white shadow-sm select-none">
                       <Flame className="w-3 h-3 fill-current" />
                       TU PRÓXIMA RUTINA
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-black/10 text-[#0A0A0C] border border-black/15 select-none">
-                      <Star className="w-2.5 h-2.5 fill-current" />
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#27272A] text-zinc-300 border border-zinc-700 select-none">
+                      <Star className="w-2.5 h-2.5 text-[#008000] fill-current" />
                       {activeRoutine.name}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-black/10 text-[#0A0A0C] border border-black/15 select-none">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-[#27272A] text-zinc-300 border border-zinc-700 select-none">
                       Enfoque: {nextDay.name}
                     </span>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-[#0A0A0C] tracking-tight leading-tight mt-1">
+                  <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight mt-1">
                     {nextDay.name}
                   </h2>
-                  <p className="text-xs text-[#0A0A0C]/80 font-bold mt-1">
+                  <p className="text-xs text-zinc-400 font-medium mt-1">
                     {nextDay.exercises.length} ejercicios · ~{Math.round(nextDay.exercises.length * 8.5)} min estimados · {nextDay.exercises.reduce((acc, ex) => acc + ex.targetSets, 0)} series totales
                   </p>
                 </div>
@@ -296,28 +316,28 @@ export const HomePage: React.FC = () => {
                   {nextDay.exercises.slice(0, 3).map((ex, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between gap-2 text-xs font-bold text-[#0A0A0C]/90 bg-black/5 px-3.5 py-2 rounded-xl border border-black/5"
+                      className="flex items-center justify-between gap-2 text-xs font-semibold text-zinc-200 bg-[#121318] px-3.5 py-2.5 rounded-xl border border-[#27272A]"
                     >
                       <span className="whitespace-normal break-words [word-break:break-word] flex-1 min-w-0">
                         {idx + 1}. {ex.exercise?.name || 'Ejercicio'}
                       </span>
-                      <span className="text-[#0A0A0C]/75 text-[11px] font-black flex-shrink-0">
+                      <span className="text-[#008000] text-[11px] font-black flex-shrink-0">
                         {ex.targetSets} series · {ex.targetRepsMin}–{ex.targetRepsMax} reps
                       </span>
                     </div>
                   ))}
                   {nextDay.exercises.length > 3 && (
-                    <span className="text-[11px] text-[#0A0A0C]/70 block font-bold italic px-1">
+                    <span className="text-[11px] text-zinc-400 block font-medium italic px-1">
                       + {nextDay.exercises.length - 3} ejercicios más configurados
                     </span>
                   )}
                 </div>
 
-                {/* BOTÓN INTERNO EN CONTRASTE OSCURO */}
+                {/* BOTÓN PRINCIPAL VERDE */}
                 <button
                   type="button"
                   onClick={() => handleStartWorkout(nextDay!, activeRoutine.name)}
-                  className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-black hover:bg-zinc-900 active:scale-[0.99] text-white font-black text-sm tracking-wider uppercase py-4 shadow-md transition-all select-none"
+                  className="w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#008000] hover:bg-[#006400] active:scale-[0.99] text-white font-black text-sm tracking-wider uppercase py-4 shadow-lg shadow-[#008000]/20 transition-all select-none"
                 >
                   <Play className="w-4 h-4 fill-current stroke-none" />
                   INICIAR ENTRENAMIENTO
@@ -326,7 +346,7 @@ export const HomePage: React.FC = () => {
             </div>
           )}
 
-          {/* SECCIÓN: DÍAS DE LA RUTINA ACTIVA (Tarjetas por bloques coloridos estilo Screen 3) */}
+          {/* SECCIÓN: DÍAS DE LA RUTINA ACTIVA */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black text-zinc-200 tracking-wider uppercase flex items-center gap-1.5">
@@ -342,32 +362,33 @@ export const HomePage: React.FC = () => {
               </Link>
             </div>
 
-            {/* Lista de días de la rutina activa en bloques coloridos */}
+            {/* Lista de días de la rutina activa en tarjetas homogéneas oscuras */}
             <div className="grid grid-cols-1 gap-3">
-              {activeRoutine.days.map((d, dIdx) => {
+              {activeRoutine.days.map((d) => {
                 const isNext = nextDay?.id === d.id;
-                const color = dayBlockColors[dIdx % dayBlockColors.length];
                 return (
                   <div
                     key={d.id}
-                    className={`flex items-center justify-between p-4 sm:p-5 rounded-[20px] transition-all shadow-md ${color.bg} ${color.text} ${
-                      isNext ? 'ring-2 ring-white/40 shadow-lg' : ''
+                    className={`flex items-center justify-between p-4 sm:p-5 rounded-[20px] transition-all bg-[#18181B] border ${
+                      isNext
+                        ? 'border-[#008000]/60 ring-1 ring-[#008000]/40 shadow-lg'
+                        : 'border-[#27272A] hover:border-zinc-700'
                     }`}
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-base font-black tracking-tight">{d.name}</h4>
+                        <h4 className="text-base font-black tracking-tight text-white">{d.name}</h4>
                         {isNext && (
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${color.badgeNext}`}>
+                          <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#008000]/20 text-[#008000] border border-[#008000]/40">
                             Siguiente
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${color.badgeBg}`}>
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#121318] text-zinc-400 border border-[#27272A]">
                           {d.exercises.length} {d.exercises.length === 1 ? 'ejercicio' : 'ejercicios'}
                         </span>
-                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${color.badgeBg}`}>
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#121318] text-zinc-400 border border-[#27272A]">
                           ~{Math.round(d.exercises.length * 8.5)} min
                         </span>
                       </div>
@@ -375,7 +396,11 @@ export const HomePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleStartWorkout(d, activeRoutine.name)}
-                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md active:scale-95 ${color.btnBg}`}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-md active:scale-95 ${
+                        isNext
+                          ? 'bg-[#008000] hover:bg-[#006400] text-white'
+                          : 'bg-[#27272A] hover:bg-zinc-700 text-zinc-200'
+                      }`}
                     >
                       <Play className="w-3.5 h-3.5 fill-current stroke-none" />
                       Iniciar
@@ -417,7 +442,7 @@ export const HomePage: React.FC = () => {
         </div>
 
         {recentSessions.length === 0 ? (
-          <Card className="text-center py-6 px-4 rounded-[20px] bg-[#181920] border-[#272833]">
+          <Card className="text-center py-6 px-4 rounded-[20px] bg-[#18181B] border-[#27272A]">
             <p className="text-sm text-zinc-400">Aún no has registrado ningún entrenamiento.</p>
             <p className="text-xs text-zinc-500 mt-1">¡Comienza tu primera sesión para construir tu historial!</p>
           </Card>
@@ -426,7 +451,7 @@ export const HomePage: React.FC = () => {
             {recentSessions.slice(0, 3).map((s) => (
               <div
                 key={s.id}
-                className="p-3.5 rounded-[20px] bg-[#181920] border border-[#272833] flex items-center justify-between hover:border-zinc-700 transition-colors"
+                className="p-3.5 rounded-[20px] bg-[#18181B] border border-[#27272A] flex items-center justify-between hover:border-zinc-700 transition-colors"
               >
                 <div>
                   <span className="text-[10px] font-bold text-[#008000] uppercase tracking-wider block">
@@ -439,7 +464,7 @@ export const HomePage: React.FC = () => {
                 </div>
                 <Link
                   to={`/history/${s.id}`}
-                  className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 bg-[#272833] hover:bg-zinc-700 transition-colors"
+                  className="p-2 rounded-xl text-zinc-400 hover:text-zinc-100 bg-[#27272A] hover:bg-zinc-700 transition-colors"
                 >
                   <ArrowRight className="w-4 h-4" />
                 </Link>
@@ -474,7 +499,7 @@ export const HomePage: React.FC = () => {
             {PRESET_OPTIONS.map((preset) => (
               <div
                 key={preset.index}
-                className="p-4 rounded-[20px] bg-[#181920] border border-[#272833] space-y-2.5 hover:border-zinc-700 transition-all"
+                className="p-4 rounded-[20px] bg-[#18181B] border border-[#27272A] space-y-2.5 hover:border-zinc-700 transition-all"
               >
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-bold text-zinc-100">{preset.title}</h4>
