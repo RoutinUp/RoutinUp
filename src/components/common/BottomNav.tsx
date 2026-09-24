@@ -12,7 +12,7 @@ export const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-gym-bg/95 backdrop-blur-xl border-t border-gym-border/60 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#09090B]/95 backdrop-blur-xl border-t border-[#27272A] pb-safe">
       <div className="max-w-md mx-auto grid grid-cols-5 h-16">
         {navItems.map((item) => (
           <NavLink
@@ -23,15 +23,15 @@ export const BottomNav: React.FC = () => {
             className={({ isActive }) => `
               flex flex-col items-center justify-center gap-1 transition-all duration-200 select-none
               ${isActive
-                ? 'text-gym-lime font-bold'
-                : 'text-gray-400 hover:text-gray-200 font-medium'
+                ? 'text-gym-primary font-bold'
+                : 'text-zinc-400 hover:text-zinc-200 font-medium'
               }
             `}
           >
             {({ isActive }) => (
               <>
-                <div className={`p-1.5 rounded-2xl transition-all ${isActive ? 'bg-gym-lime/15 shadow-glow-lime' : ''}`}>
-                  <item.icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px] text-gym-lime' : 'stroke-2'}`} />
+                <div className={`p-1.5 rounded-xl transition-all ${isActive ? 'bg-gym-primary/10' : ''}`}>
+                  <item.icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5px] text-gym-primary' : 'stroke-2'}`} />
                 </div>
                 <span className="text-[10px] tracking-tight truncate max-w-full px-0.5">{item.label}</span>
               </>

@@ -157,24 +157,24 @@ export const HomePage: React.FC = () => {
         <>
           {/* TARJETA GRANDE: TU PRÓXIMA RUTINA */}
           {nextDay && (
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#242738] via-[#1A1C28] to-[#13141C] border border-gym-border/80 shadow-2xl p-5">
-              <div className="absolute top-0 right-0 p-6 opacity-10">
-                <Dumbbell className="w-32 h-32 text-gym-lime" />
+            <div className="relative overflow-hidden rounded-[16px] bg-[#18181B] border border-[#27272A] shadow-sm p-5">
+              <div className="absolute top-0 right-0 p-6 opacity-5">
+                <Dumbbell className="w-32 h-32 text-gym-primary" />
               </div>
 
               <div className="relative z-10 space-y-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-gym-lime/15 text-gym-lime border border-gym-lime/30 shadow-glow-lime">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gym-primary/10 text-gym-primary border border-gym-primary/20">
                       <Flame className="w-3 h-3" />
                       TU PRÓXIMA RUTINA
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gym-lavender/15 text-gym-lavender border border-gym-lavender/30">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider bg-zinc-800 text-zinc-300 border border-zinc-700/50">
                       <Star className="w-2.5 h-2.5 fill-current" />
                       {activeRoutine.name}
                     </span>
                   </div>
-                  <h2 className="text-2xl font-black text-white mt-1.5 leading-tight">
+                  <h2 className="text-2xl font-black text-zinc-100 mt-1.5 leading-tight">
                     {nextDay.name}
                   </h2>
                   <p className="text-xs text-gray-400 font-medium mt-0.5">

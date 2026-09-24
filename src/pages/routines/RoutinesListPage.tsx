@@ -130,10 +130,10 @@ export const RoutinesListPage: React.FC = () => {
       {/* Cabecera Principal */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[10px] font-bold text-gym-lime uppercase tracking-widest block">
+          <span className="text-[10px] font-bold text-gym-primary uppercase tracking-widest block">
             Entrenamiento
           </span>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-2xl font-black text-zinc-100 tracking-tight">
             Rutinas y Ejercicios
           </h1>
         </div>
@@ -149,15 +149,15 @@ export const RoutinesListPage: React.FC = () => {
         )}
       </div>
 
-      {/* Selector de Pestañas Superiores (Tabs) */}
-      <div className="grid grid-cols-2 p-1.5 rounded-full bg-slate-900 border border-gym-border/70 text-xs font-bold shadow-inner">
+      {/* Selector de Pestañas Superiores (Tabs estilo shadcn) */}
+      <div className="grid grid-cols-2 p-1 rounded-[16px] bg-[#18181B] border border-[#27272A] text-xs font-semibold shadow-sm">
         <button
           type="button"
           onClick={() => setSearchParams({ tab: 'routines' })}
-          className={`py-2 px-3 rounded-full text-center transition-all ${
+          className={`py-2 px-3 rounded-[12px] text-center transition-all ${
             activeTab === 'routines'
-              ? 'bg-gym-lime text-slate-950 font-black shadow-glow-lime'
-              : 'text-gray-400 hover:text-white'
+              ? 'bg-gym-primary text-zinc-950 font-bold shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-100 font-medium'
           }`}
         >
           Mis Rutinas
@@ -165,10 +165,10 @@ export const RoutinesListPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setSearchParams({ tab: 'exercises' })}
-          className={`py-2 px-3 rounded-full text-center transition-all ${
+          className={`py-2 px-3 rounded-[12px] text-center transition-all ${
             activeTab === 'exercises'
-              ? 'bg-gym-lime text-slate-950 font-black shadow-glow-lime'
-              : 'text-gray-400 hover:text-white'
+              ? 'bg-gym-primary text-zinc-950 font-bold shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-100 font-medium'
           }`}
         >
           Biblioteca de Ejercicios

@@ -19,22 +19,22 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-bold tracking-wide transition-all duration-200 active:scale-[0.98] select-none rounded-[20px] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 shadow-sm';
+  const baseStyles = 'inline-flex items-center justify-center font-bold tracking-wide transition-all duration-200 active:scale-[0.98] select-none rounded-[16px] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 shadow-sm';
 
   const variants = {
-    primary: 'bg-gym-lime hover:bg-lime-400 text-slate-950 font-black shadow-glow-lime hover:shadow-lime-500/40',
-    accent: 'bg-gym-electric hover:bg-sky-400 text-slate-950 font-black shadow-glow-accent',
-    secondary: 'bg-gym-cardLighter hover:bg-slate-700 text-white border border-gym-border/80',
-    danger: 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30',
-    ghost: 'bg-transparent hover:bg-slate-800 text-gray-300',
-    outline: 'bg-transparent border border-gym-border hover:border-gym-lime text-white',
+    primary: 'bg-gym-primary hover:bg-lime-400 text-zinc-950 font-bold shadow-sm',
+    accent: 'bg-gym-primary hover:bg-lime-400 text-zinc-950 font-bold shadow-sm',
+    secondary: 'bg-[#27272A] hover:bg-[#3F3F46] text-zinc-100 border border-[#27272A] font-semibold',
+    danger: 'bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 font-semibold',
+    ghost: 'bg-transparent hover:bg-[#27272A] text-zinc-400 hover:text-zinc-100 font-medium',
+    outline: 'bg-transparent border border-[#27272A] hover:border-gym-primary/60 hover:bg-[#18181B] text-zinc-100 font-semibold',
   };
 
   const sizes = {
     sm: 'text-xs px-3 py-2 min-h-[36px] gap-1.5',
-    md: 'text-sm px-4 py-3 min-h-[46px] gap-2',
-    lg: 'text-base px-6 py-3.5 min-h-[52px] gap-2.5',
-    xl: 'text-lg px-8 py-4 min-h-[60px] gap-3 font-black uppercase tracking-wider',
+    md: 'text-sm px-4 py-2.5 min-h-[44px] gap-2',
+    lg: 'text-base px-6 py-3 min-h-[48px] gap-2.5',
+    xl: 'text-lg px-8 py-3.5 min-h-[54px] gap-3 font-bold uppercase tracking-wider',
   };
 
   return (
